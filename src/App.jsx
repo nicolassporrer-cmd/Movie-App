@@ -82,12 +82,13 @@ export default function App() {
       const gone = excluded.has(f.k);
       if (!inTab(f, tab, gone)) return false;
       if (filters.genre && !f.g.includes(filters.genre)) return false;
-      if (filters.director && !(f.d || '').includes(filters.director)) return false;
+      // match against the full credit list (da) where one exists, not the truncated display
+      if (filters.director && !((f.da || f.d || '').includes(filters.director))) return false;
       if (filters.minImdb > 0 && !(f.i != null && f.i >= filters.minImdb)) return false;
       if (filters.minRt > 0 && !(f.rt != null && f.rt >= filters.minRt)) return false;
       if (filters.maxRuntime < RUNTIME_MAX && !(f.r != null && f.r <= filters.maxRuntime)) return false;
       if (filters.friendOnly && !f.f) return false;
-      if (q && !(f.t.toLowerCase().includes(q) || (f.d || '').toLowerCase().includes(q))) return false;
+      if (q && !(f.t.toLowerCase().includes(q) || (f.da || f.d || '').toLowerCase().includes(q))) return false;
       return true;
     });
     const by = {

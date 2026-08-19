@@ -1,13 +1,13 @@
 // Every tunable value lives here. Nothing configurable is written inline elsewhere.
 
+/* The Directors / Bong Joon Ho / Nouvelle Vague tabs were removed for a cleaner
+   header. Their films are all still in the library — reachable from All films,
+   from the director dropdown, and still badged on the cards. Only the tabs went. */
 export const TABS = [
   { id: 'all', label: 'All films' },
   { id: 'seen', label: 'Seen' },
   { id: 'watchlist', label: 'To watch' },
   { id: 'discover', label: 'Unseen top 1000' },
-  { id: 'directors', label: 'Directors' },
-  { id: 'bong', label: 'Bong Joon Ho' },
-  { id: 'nv', label: 'Nouvelle Vague' },
   { id: 'removed', label: 'Removed' }
 ];
 
@@ -45,9 +45,6 @@ export function inTab(film, tab, isRemoved) {
     case 'seen': return !!film.s;
     case 'watchlist': return !!film.w && !film.s;
     case 'discover': return !!film.top && !film.s;
-    case 'directors': return !!film.dir && !film.s;
-    case 'bong': return !!film.bong;
-    case 'nv': return !!film.nv;
     case 'removed': return false;
     default: return false;
   }

@@ -143,7 +143,11 @@ function rss(u) {
   const omdb = fs.existsSync(APP + 'data/omdb-cache.json') ? JSON.parse(fs.readFileSync(APP + 'data/omdb-cache.json', 'utf8')) : {};
   let rtN = 0, posterN = 0;
   films.forEach(f => {
-    f.d = f.dIds.map(n => nameOf.get(n)).filter(Boolean).slice(0, 2).join(', ') || null;
+    const names = f.dIds.map(n => nameOf.get(n)).filter(Boolean);
+    f.d = names.slice(0, 2).join(', ') || null;   // display: two names keeps the card readable
+    // `da` carries every director and is used for filtering only. Without it a
+    // third-billed director is unfindable, since the dropdown matches on display.
+    if (names.length > 2) f.da = names.join(', ');
     delete f.dIds;
     const o = omdb[f.k];
     if (o && !o.error) {

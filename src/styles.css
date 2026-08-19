@@ -37,7 +37,7 @@ body {
      missing the browser simply drops that layer and the gradient shows. */
   background-image:
     linear-gradient(180deg, rgba(10,12,15,.25) 0%, rgba(10,12,15,.55) 45%, rgba(10,12,15,.92) 100%),
-    url('/Movie-App/banner.jpg'),
+    url('/Movie-App/banner.avif'),
     linear-gradient(135deg, #1c2530 0%, #0f1216 60%);
   background-size: cover, cover, cover;
   background-position: center, center 38%, center;

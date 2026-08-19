@@ -46,6 +46,35 @@ Decisions that would be expensive or dangerous to get wrong on a rebuild.
 
 ## Entries
 
+### 2026-08-19 #8 — Director list reshaped: 5 removed, 12 added
+
+**Branch:** n/a · **Status:** database updated, verified
+
+**What changed**
+- Removed from the curated list: Rajkumar Hirani, Upendra, Mrinal Sen, Mani Ratnam, Bimal Roy. **106 films dropped** from the catalogue.
+- Added: M. Night Shyamalan, Alfred Hitchcock, Sidney Lumet, Ingmar Bergman, Orson Welles, Brian De Palma, Clint Eastwood, Greta Gerwig, Hayao Miyazaki, Woody Allen, Terrence Malick, Lars von Trier. **360 films added.**
+- `data/top50-directors.json` → `data/directors.json` (57 entries, each tagged `imdb-top50` or `added`). The tab is now "Directors" — after the edits it is no longer the IMDb top 50 and the label would have been a lie.
+- New `data/excluded-directors.json`.
+- Library: 2,059 → **2,253 films**. Directors tab: 793 → 1,045.
+
+**Why**
+- Exclusion is applied at catalogue level rather than by hiding at render time, so excluded directors cannot leak in through the top-1000 pool.
+
+**Rejected**
+- **Excluding films the user has already watched or shortlisted.** Removing a director must never erase their own history, so `seen` and `watchlist` entries are re-added after the exclusion pass regardless of who directed them. A catalogue filter is not a record filter.
+- **Leaving the tab labelled "Top-50 directors"** — with 5 removed and 12 added it is a 57-name curated list, and keeping the old label would misdescribe it.
+
+**Gotchas discovered**
+- **IMDb's `primaryProfession` is not a reliable test of what someone does.** Hayao Miyazaki lists as `animation_department,writer,art_department` — no "director" at all — yet `title.crew` correctly credits him as director on 15 films. `primaryProfession` is a top-3 summary, so use it only to disambiguate same-name people, never to decide whether someone qualifies as a director. Filtering candidates on it would have silently dropped him.
+- **Removing an entity from a curated list does not remove its items from other collections.** A film by an excluded director can still qualify for the top-1000 pool on its own merits. Exclusion has to be applied when the store is built, not when a tab is rendered.
+
+**Files touched**
+- `data/directors.json` — new, replaces `top50-directors.json`
+- `data/excluded-directors.json` — new
+- `scripts/build-mockup.js` — catalogue-level exclusion, renamed tab
+
+---
+
 ### 2026-08-19 #7 — Title+year collisions attached wrong directors; build stamp added
 
 **Branch:** n/a · **Status:** fixed and verified

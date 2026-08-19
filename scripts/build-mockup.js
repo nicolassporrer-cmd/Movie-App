@@ -33,13 +33,15 @@ function rss(u) {
   [...me, ...reg].forEach(i => { if (i.poster) poster[norm(i.title) + '|' + i.year] = i.poster; });
   reg.forEach(i => { if (i.rating) friend[norm(i.title) + '|' + i.year] = { who: 'Regelegorila', r: +i.rating }; });
 
-  const TOP50 = JSON.parse(fs.readFileSync(APP + 'data/top50-directors.json', 'utf8'));
+  const DIRLIST = JSON.parse(fs.readFileSync(APP + 'data/directors.json', 'utf8'));
   const COLL = JSON.parse(fs.readFileSync(APP + 'data/collections.json', 'utf8'));
-  const top50Ids = new Set(TOP50.map(d => d.id));
+  const top50Ids = new Set(DIRLIST.map(d => d.id));
   const bongIds = new Set(COLL['bong-joon-ho'].directors.map(d => d.id));
   const nvIds = new Set(COLL['nouvelle-vague'].directors.map(d => d.id));
   const nvGroup = new Map(COLL['nouvelle-vague'].directors.map(d => [d.id, d.group]));
   const [NV_FROM, NV_TO] = COLL['nouvelle-vague'].corePeriod;
+  const EXCL = JSON.parse(fs.readFileSync(APP + 'data/excluded-directors.json', 'utf8'));
+  const exclIds = new Set(EXCL.directors.map(d => d.id));
 
   const rat = new Map();
   fs.readFileSync(D + 'ratings.tsv', 'utf8').split('\n').forEach((l, i) => {
@@ -114,8 +116,17 @@ function rss(u) {
     films.set(id, rec); return rec;
   };
 
-  topIds.forEach(id => ensure(id));
-  crew.forEach((ds, id) => { if (ds.some(d => top50Ids.has(d) || bongIds.has(d) || nvIds.has(d))) ensure(id); });
+  /* Films by excluded directors never enter the catalogue. Anything the user has
+     actually watched or shortlisted is re-added below regardless — excluding a
+     director must not erase their own history. */
+  const byExcluded = id => (crew.get(id) || []).some(d => exclIds.has(d));
+  let dropped = 0;
+  topIds.forEach(id => { if (byExcluded(id)) { dropped++; return; } ensure(id); });
+  crew.forEach((ds, id) => {
+    if (ds.some(d => exclIds.has(d))) { if (topIds.has(id)) return; dropped++; return; }
+    if (ds.some(d => top50Ids.has(d) || bongIds.has(d) || nvIds.has(d))) ensure(id);
+  });
+  console.log('films dropped for excluded directors:', dropped);
 
   let unresolved = 0;
   const attachLb = (rows, field) => rows.forEach(r => {
@@ -187,7 +198,7 @@ function rss(u) {
   const DASH = '<span class="unk">&mdash;</span>';
   const stars = v => v == null ? '' : '\u2605'.repeat(Math.floor(v)) + (v % 1 ? '\u00bd' : '');
   const allGen = [...new Set(all.flatMap(f => f.genres))].sort();
-  const allDirs = [...new Set([...TOP50.map(d => d.name), ...COLL['bong-joon-ho'].directors.map(d => d.name), ...COLL['nouvelle-vague'].directors.map(d => d.name)])].sort();
+  const allDirs = [...new Set([...DIRLIST.map(d => d.name), ...COLL['bong-joon-ho'].directors.map(d => d.name), ...COLL['nouvelle-vague'].directors.map(d => d.name)])].sort();
 
   all.sort((a, b) => (b.imdb || 0) - (a.imdb || 0) || b.votes - a.votes);
 
@@ -311,7 +322,7 @@ h3{font-size:13.5px;margin:0;line-height:1.3}
 <button class="tab" data-t="seen">Seen <span class="tc" data-tc="seen"></span></button>
 <button class="tab" data-t="towatch">To Watch <span class="tc" data-tc="towatch"></span></button>
 <button class="tab" data-t="discover">Unseen top ${TOP_N} <span class="tc" data-tc="discover"></span></button>
-<button class="tab" data-t="directors">Top-50 directors <span class="tc" data-tc="directors"></span></button>
+<button class="tab" data-t="directors">Directors <span class="tc" data-tc="directors"></span></button>
 <button class="tab" data-t="bong">Bong Joon Ho <span class="tc" data-tc="bong"></span></button>
 <button class="tab" data-t="nv">Nouvelle Vague <span class="tc" data-tc="nv"></span></button>
 <button class="tab rmtab" data-t="removed">Removed <span class="tc" data-tc="removed"></span></button>

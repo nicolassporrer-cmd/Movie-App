@@ -1,0 +1,10 @@
+{
+  "_note": "Films by these directors are dropped from the catalogue. Anything already watched or on the watchlist is kept regardless - excluding a director must never erase the user's own history.",
+  "directors": [
+    {"id": "nm0386246", "name": "Rajkumar Hirani"},
+    {"id": "nm1962192", "name": "Upendra"},
+    {"id": "nm0784019", "name": "Mrinal Sen"},
+    {"id": "nm0711745", "name": "Mani Ratnam"},
+    {"id": "nm0746950", "name": "Bimal Roy"}
+  ]
+}

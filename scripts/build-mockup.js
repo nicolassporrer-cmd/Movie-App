@@ -48,7 +48,7 @@ function rss(u) {
   });
 
   // MOVIES only — without this the top of the ratings file is TV episodes
-  const byId = new Map(), byTitle = new Map();
+  const byId = new Map(), byTitle = new Map(), collide = new Map(), dupKeys = new Set();
   await new Promise(res => {
     const rl = stream('basics.tsv.gz');
     rl.on('line', l => {
@@ -56,13 +56,22 @@ function rss(u) {
       if (p[1] !== 'movie') return;
       const rec = { id: p[0], title: p[2], orig: p[3], year: +p[5] || null, runtime: +p[7] || null, genres: p[8] === '\\N' ? [] : p[8].split(',') };
       byId.set(p[0], rec);
+      /* Title+year is NOT unique: 'The Big Blue' (1988) matches both Besson's film
+         and an unrelated one. First-wins silently attached the wrong director, so
+         resolve collisions toward the most-voted title — the one a person means. */
       const k1 = norm(p[2]) + '|' + rec.year, k2 = norm(p[3]) + '|' + rec.year;
-      if (!byTitle.has(k1)) byTitle.set(k1, p[0]);
-      if (!byTitle.has(k2)) byTitle.set(k2, p[0]);
+      const votes = (rat.get(p[0]) || { v: 0 }).v;
+      const claim = k => {
+        const cur = byTitle.get(k);
+        if (cur === undefined) { byTitle.set(k, p[0]); collide.set(k, votes); return; }
+        if (votes > (collide.get(k) || 0)) { byTitle.set(k, p[0]); collide.set(k, votes); }
+        dupKeys.add(k);
+      };
+      claim(k1); if (k2 !== k1) claim(k2);
     });
     rl.on('close', res);
   });
-  console.log('movies indexed:', byId.size.toLocaleString());
+  console.log('movies indexed:', byId.size.toLocaleString(), '| title+year keys with more than one film:', dupKeys.size.toLocaleString());
 
   const crew = new Map();
   await new Promise(res => {
@@ -213,6 +222,10 @@ function rss(u) {
     '</div></div></article>'
   ].join('');
 
+  const d = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const BUILD = 'v5 — ' + d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+
   const html = `<meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Movie-App Mockup v4</title>
@@ -288,7 +301,8 @@ h3{font-size:13.5px;margin:0;line-height:1.3}
 </style>
 <div class="w">
 <h1>Movie-App &mdash; browse, discover, shuffle</h1>
-<div class="sub">Mockup v4 &middot; ${counts.all.toLocaleString()} unique films &middot; every value is real or explicitly blank</div>
+<div class="sub"><strong>Build ${BUILD}</strong> &middot; ${counts.all.toLocaleString()} unique films &middot; every value is real or explicitly blank<br>
+<span style="opacity:.7">If this header does not match the build I just sent you, you have an older copy open &mdash; check your Downloads folder for <code>mockup-browse (1).html</code> and friends.</span></div>
 <div class="info"><strong>All films</strong> is the whole database, deduplicated &mdash; a film appears once no matter how many collections it belongs to, with badges showing which.<br>
 <strong>Nouvelle Vague</strong> has no formal membership; the list used is the Cahiers du cinéma core plus the Left Bank group, defined in <code>data/collections.json</code> and editable. Films from ${NV_FROM}&ndash;${NV_TO} are badged as the movement's active period (${nvCore} of ${counts.nv}); later films by the same directors are kept so the database stays complete.<br>
 <strong>Blank (&mdash;):</strong> Rotten Tomatoes everywhere, and posters for all but the ~50 films in the RSS window. Both need API keys.</div>

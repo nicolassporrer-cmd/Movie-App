@@ -46,6 +46,33 @@ Decisions that would be expensive or dangerous to get wrong on a rebuild.
 
 ## Entries
 
+### 2026-08-19 #7 — Title+year collisions attached wrong directors; build stamp added
+
+**Branch:** n/a · **Status:** fixed and verified
+
+**What changed**
+- Letterboxd films now resolve to the **most-voted** IMDb title when several share a title and year, instead of whichever the dataset stream happened to reach first.
+- Every page carries a visible **build stamp** (`Build v5 — YYYY-MM-DD HH:MM`) with a line telling the reader to check for a stale copy if it does not match.
+
+**Why**
+- Reported as "the director names are wrong". A spot-check against 20 films where the correct answer is known found 19 right and one wrong: *The Big Blue* (1988) showed **Andrew Horn** rather than Luc Besson.
+- The cause: `title+year` is not unique. The index kept the first film seen for each key, and stream order is arbitrary. **13,464 title+year keys in IMDb's movie set map to more than one film.** Now 30 of 30 spot-checked directors are correct.
+
+**Rejected**
+- **Matching on title alone** — strictly worse; year at least narrows the field.
+- **A manual override file as the primary fix** — still needed for genuine ambiguity, but it should not be carrying an error this systematic. Picking the most-voted title fixes the general case; overrides handle the residue.
+- **Reporting collisions and stopping** — 13,464 keys is far too many to review by hand, and the vote heuristic resolves virtually all of them correctly.
+
+**Gotchas discovered**
+- **`title+year` is not a unique key for films, by a wide margin.** 13,464 collisions across 754,554 movies. First-match-wins produces confidently wrong metadata with no error and no warning — the card renders perfectly, just describing a different film. Resolve toward the most-voted candidate: when a person types a title, they mean the famous one.
+- **Regenerating a file under the same name makes stale copies indistinguishable.** Each rebuild was delivered as `mockup-browse.html`, so the reader's Downloads folder accumulated `mockup-browse (1).html`, `(2)`, and so on — and the complaint "I don't see the All films view" almost certainly came from an older build that predated the tab. Every generated artifact should carry a visible build stamp, and each delivery should use a distinct filename.
+
+**Files touched**
+- `scripts/build-mockup.js` — vote-weighted collision resolution, collision count logged, build stamp
+- `mockup-browse.html` — rebuilt as v5
+
+---
+
 ### 2026-08-19 #6 — OMDb enrichment: RT, Metacritic and posters from one key
 
 **Branch:** n/a · **Status:** enrichment running

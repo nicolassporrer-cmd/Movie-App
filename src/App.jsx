@@ -41,7 +41,17 @@ export default function App() {
   useEffect(() => {
     fetch(import.meta.env.BASE_URL + 'data/films.json')
       .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-      .then(setData)
+      .then(d => {
+        setData(d);
+        // Seed the known subscriptions on a device that has never been set up.
+        // Guarded on the key being absent entirely, not empty — clearing every
+        // service is a deliberate choice and must not be undone on reload.
+        if (localStorage.getItem(SUBS_KEY) === null && (d.defaultSubs || []).length) {
+          const seeded = new Set(d.defaultSubs);
+          setMine(seeded);
+          saveSubs(seeded);
+        }
+      })
       .catch(e => setError(e.message));
   }, []);
 
@@ -189,6 +199,7 @@ export default function App() {
         mine={mine}
         onToggle={toggleSub}
         onClear={() => { setMine(new Set()); saveSubs(new Set()); }}
+        regions={data.providerRegions || {}}
         open={subsOpen}
         setOpen={setSubsOpen}
       />

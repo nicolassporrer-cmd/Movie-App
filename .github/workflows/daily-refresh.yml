@@ -70,11 +70,15 @@ jobs:
       # Streaming rights rotate, so provider data expires after 7 days. Running daily
       # against that window refreshes roughly a seventh of the library each night
       # instead of all 2,200 at once.
+      # Both regions: US is where he watches, FR supplies Canal+ over the VPN.
+      # Each region has its own cache, so both must be refreshed or Canal+ goes stale.
       - name: Refresh streaming availability
         if: steps.tmdb.outputs.present == 'true'
         env:
           TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
-        run: node scripts/enrich-tmdb.cjs --max-age-days 7
+        run: |
+          node scripts/enrich-tmdb.cjs --region US --max-age-days 7
+          node scripts/enrich-tmdb.cjs --region FR --max-age-days 7
 
       - name: Merge streaming availability into the dataset
         if: steps.tmdb.outputs.present == 'true'
@@ -84,7 +88,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet -- data/omdb-cache.json data/tmdb-ids.json data/providers-fr.json public/data/films.json; then
+          if git diff --quiet -- data/ public/data/films.json; then
             echo "Nothing changed today."
             exit 0
           fi
@@ -93,6 +97,6 @@ jobs:
             const noRt=p.films.filter(f=>f.rt==null).length;
             console.log(p.counts.seen+' seen, '+p.counts.watchlist+' to watch, '+noRt+' still without RT');
           ")
-          git add data/omdb-cache.json data/tmdb-ids.json data/providers-fr.json public/data/films.json
+          git add data/ public/data/films.json
           git commit -m "Daily refresh: $SUMMARY"
           git push

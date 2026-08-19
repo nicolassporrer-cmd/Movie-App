@@ -18,9 +18,13 @@ const fs = require('fs'), path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 const FILMS = path.join(ROOT, 'public', 'data', 'films.json');
 const IDS = path.join(ROOT, 'data', 'tmdb-ids.json');
-const PROV = path.join(ROOT, 'data', 'providers-fr.json');
 
-const REGION = process.env.TMDB_REGION || 'FR';
+
+// Region is per-run and each gets its own cache file — Nicolas watches from the US
+// but VPNs to France for Canal+, so both regions are fetched and merged later.
+const PROV_FOR = r => path.join(ROOT, 'data', 'providers-' + r.toLowerCase() + '.json');
+const regionArg = (() => { const i = process.argv.indexOf('--region'); return i > -1 ? process.argv[i + 1] : null; })();
+const REGION = (regionArg || process.env.TMDB_REGION || 'US').toUpperCase();
 const CONCURRENCY = 6;                 // polite; TMDB allows far more
 const argv = process.argv.slice(2);
 const has = f => argv.includes(f);
@@ -44,6 +48,7 @@ if (!KEY) {
 
 const readJson = (p, d) => fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, 'utf8')) : d;
 const ids = readJson(IDS, {});
+const PROV = PROV_FOR(REGION);
 const prov = readJson(PROV, {});
 const payload = JSON.parse(fs.readFileSync(FILMS, 'utf8'));
 

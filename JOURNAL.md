@@ -46,6 +46,41 @@ Decisions that would be expensive or dangerous to get wrong on a rebuild.
 
 ## Entries
 
+### 2026-08-19 #12 — Region switched to US; service list is subscriptions, not volume
+
+**Branch:** `main` · **Status:** shipped
+
+**What changed**
+- Primary region **FR → US**. Nicolas watches from the United States; Canal+ is pulled from the FR data because he reaches it over a VPN. Region config lives in `data/regions.json`; each region has its own cache.
+- **US coverage is far better: 1,444 films on a subscription service, against 885 for France.**
+- The picker now lists **his five actual services** — Netflix (106), Disney+ (83), Amazon Prime Video (173), Peacock (40), Canal+ (56, tagged FR) — with the remaining 104 services grouped as **Others** (1,254 films).
+- Subscriptions are seeded automatically on a device that has never been set up, so the app is useful on first open.
+- Nightly job refreshes both regions.
+
+**Why**
+- He asked for "the 10 most represented services, and Others for the rest". Implemented literally, that list was **Kanopy (376), Criterion Channel (374), Hoopla (232), fuboTV (222), HBO Max (214), Philo (203), Prime (173), Fawesome (166), YouTube TV (140), Netflix (106)** — and **Peacock ranked 21st while Netflix barely scraped in and Disney+ fell into Others.**
+- Library and arthouse services carry hundreds of older films, so volume ranking systematically favours services a person is least likely to pay for. **Film count is the wrong criterion for a subscription picker; "do you pay for it" is the right one.** Confirmed his five directly rather than guessing.
+
+**Rejected**
+- **Ranking purely by film count**, as literally requested — it buried two services he had explicitly told me he uses, in the same conversation. Followed the intent (a short, clean, relevant list) over the letter, and said so.
+- **Pinning a few and filling the rest by count** — tried it; Netflix, Disney+, Hulu and Paramount+ still landed in Others behind Fawesome and Philo.
+- **Listing all 109 services** — unusable.
+- **Fetching only the US region** — would have dropped Canal+, the entire reason for the VPN.
+
+**Gotchas discovered**
+- **Peacock does not exist outside the US.** Verified against TMDB's region provider lists: US 292 providers including Peacock, FR 94 / GB 141 / DE 194 with none. Its European content is licensed to Sky and others. The service list is generated from the library, so a service can only appear if some film is actually on it — adding one by hand would create a checkbox matching zero films forever.
+- **Tier suffixes must be stripped before the "Plus" rule, longest first.** "Peacock Premium Plus" survived as "Peacock Premium+" and counted as a separate service from "Peacock", because `(Premium|Basic|Standard)$` no longer matched once "Plus" became "+".
+- **A per-region cache means every region must be refreshed, or one silently rots.** The nightly job originally refreshed one region; Canal+ would have frozen at today's snapshot while US data stayed current.
+
+**Files touched**
+- `data/regions.json` — new: primary region, VPN extras, listed services, default subscriptions
+- `scripts/enrich-tmdb.cjs` — `--region`, per-region cache files
+- `scripts/apply-providers.cjs` — multi-region merge, listed-services grouping
+- `src/App.jsx`, `src/Subscriptions.jsx`, `src/styles.css` — default seeding, region tag
+- `.github/workflows/daily-refresh.yml` — refreshes both regions
+
+---
+
 ### 2026-08-19 #11 — Streaming availability: "what can I watch tonight"
 
 **Branch:** `main` · **Status:** shipped

@@ -1,7 +1,7 @@
 /* Lets Nicolas declare which services he pays for. Stored in localStorage, so it is
    per-device like the removals — but it is a preference rather than data, and takes
    ten seconds to redo, so that is a fair trade for needing no backend. */
-export default function Subscriptions({ providers, counts, mine, onToggle, onClear, open, setOpen }) {
+export default function Subscriptions({ providers, counts, mine, onToggle, onClear, open, setOpen, regions = {} }) {
   if (!providers.length) return null;
 
   return (
@@ -27,6 +27,7 @@ export default function Subscriptions({ providers, counts, mine, onToggle, onCle
                   onChange={() => onToggle(name)}
                 />
                 {name}
+                {regions[name] ? <span className="chip-region" title={'Only in ' + regions[name] + ' — needs the VPN'}>{regions[name]}</span> : null}
                 <span className="chip-count">{counts[i] || 0}</span>
               </label>
             ))}

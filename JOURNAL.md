@@ -31,10 +31,45 @@ Decisions that would be expensive or dangerous to get wrong on a rebuild.
 | 4 | There is **no real "Rotten Tomatoes top 500"** — any RT ranking is derived from whatever pool we enriched | RT has no public API; enterprise access starts at $60k/yr | 2026-08-19 #2 |
 | 5 | Films keyed by **TMDB id** where known, `boxd.it` URI otherwise | Letterboxd CSV carries no TMDB id, so CSV-only films need title+year resolution, which mis-hits on remakes and alternate cuts | 2026-08-19 #1 |
 | 6 | `Math.random()` is permitted **only** inside the shuffle handler | The project rule bans random for derived values (colours, ids, sort keys); a user-triggered dice roll is the opposite requirement | 2026-08-19 #2 |
+| 7 | **Never render a metadata value we did not source** — unknown means an explicit dash | Fabricated placeholder data is indistinguishable from a bug, and cost a full review cycle to unpick | 2026-08-19 #3 |
+| 8 | Use `>>>` (unsigned) for any shift on a 32-bit hash | A signed `>>` goes negative above 2^31, yielding `undefined` array lookups on roughly 40% of inputs | 2026-08-19 #3 |
+| 9 | Directors come from `title.crew` + `name.basics`, not an API | Free, offline, and covers 674,368 credited movies | 2026-08-19 #3 |
 
 ---
 
 ## Entries
+
+### 2026-08-19 #3 — Top 1000, top-50 directors, and three mockup bugs fixed
+
+**Branch:** n/a (planning) · **Plan:** `plans/discover-and-shuffle.md` · **Status:** mockup v3 built
+
+**What changed**
+- Pool widened from top 500 to **top 1000** (score floor 9.3 → 7.5). Discover tab now 892 unseen films.
+- New **Top-50 directors** tab from the requested IMDb list (`ls071439230`). All 837 feature films by those 50 directors are in the database; 791 are unseen.
+- **All invented metadata removed.** Runtime, genres, director and IMDb score now come from IMDb's official datasets for every resolved film — **167 of the 170 watched films matched**. Anything genuinely unknown renders as an explicit `—` rather than a plausible-looking value.
+- Director filter added, driven by real credits.
+
+**Why**
+- The user reported the metadata was "wrong". It was: it was deliberately fabricated placeholder data, marked only by faded italic styling. That signal was far too weak — fabricated data that looks real is worse than no data, because it cannot be distinguished from a genuine bug. Replaced with real data where it exists and blanks where it does not.
+
+**Rejected**
+- **Keeping placeholder metadata with a louder warning** — no styling makes invented numbers safe. The rule now is: never render a value we did not source.
+- **Fetching directors from TMDB** — unnecessary. `title.crew.tsv.gz` + `name.basics.tsv.gz` give real directors for all 674,368 credited movies, free and offline.
+- **Restricting the directors tab by vote count** — the request was explicitly *all* their films. 837 is manageable; sorted by popularity so the obscure ones fall to the bottom.
+
+**Gotchas discovered**
+- **Signed right-shift on a 32-bit hash produces negative array indices.** `hash()` returned an unsigned 32-bit int via `>>> 0`, but the derived values used `n >> 5`, a *signed* shift. For any `n ≥ 2³¹` the result is negative, so `ARRAY[negative % len]` returned `undefined` — 272 cards showed "undefined" as the director and 90 as a genre. Use `>>>` throughout, or mask with `& 0x7fffffff`. Fails silently and only on ~40% of inputs, so it survives casual testing.
+- **A served HTML file with no `<meta charset>` is decoded as windows-1252, not UTF-8.** Every `·`, `★` and `½` rendered as `Â·` and `â˜…â˜…`. `fs.writeFileSync(..., 'utf8')` writes correct bytes; the browser still guesses wrong without the meta tag. Always emit `<meta charset="utf-8">` as the first line.
+- **`file://` pages cannot be verified through the preview pane, and a sandboxed viewer may not run scripts at all.** The interactive features were reported as "not working" while in fact they worked — they had simply never executed in the viewer used. Verify interactive HTML over a real `http://` server and drive it, rather than trusting a static render.
+- **A naive Windows static server rejects every path.** `path.join()` returns backslashes while a `ROOT` constant written with forward slashes does not, so a `startsWith(ROOT)` traversal guard rejects everything with a 404. Normalise with `path.resolve()` on both sides.
+
+**Files touched**
+- `scripts/build-mockup.js` — rewritten: real-data-only, streams four IMDb datasets, no fabrication
+- `scripts/serve.js` — local static server for verifying the mockup properly
+- `data/top50-directors.json` — the 50 directors with their IMDb ids, extracted from the list
+- `mockup-browse.html` — regenerated as v3, 1,890 cards across four tabs
+
+---
 
 ### 2026-08-19 #2 — Discover (IMDb top 500) & Shuffle — planned
 

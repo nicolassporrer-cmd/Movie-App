@@ -1,0 +1,20 @@
+# Generated files — never edit directly
+*.local.html
+
+# Session data
+payloads/
+transcripts/
+
+# Credentials
+.env
+*.env.local
+
+# Plans (gitignore if you prefer — remove this line to track them)
+plans/
+
+# Claude local settings
+.claude/settings.local.json
+.claude/last_anchor_check
+
+# Node / npm
+node_modules/

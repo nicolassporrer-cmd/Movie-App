@@ -124,12 +124,17 @@ export default function App() {
 
   return (
     <div className="wrap">
-      <header>
-        <h1>Movies</h1>
-        <p className="build">
-          {data.counts.all.toLocaleString()} films · {data.counts.withRt.toLocaleString()} with Rotten Tomatoes
-          · {data.counts.withPoster.toLocaleString()} with a poster · data built {data.builtAt}
-        </p>
+      {/* The photo is a CSS background, so a missing file falls back to the
+          gradient underneath rather than showing a broken image. */}
+      <header className="hero">
+        <div className="hero-inner">
+          <h1>Nico&rsquo;s Movies App</h1>
+          <p className="build">
+            {data.counts.all.toLocaleString()} films · {data.counts.withRt.toLocaleString()} with Rotten Tomatoes
+            · {data.counts.withPoster.toLocaleString()} with a poster
+          </p>
+          <p className="build built-at">Data built {data.builtAt}</p>
+        </div>
       </header>
 
       <nav className="tabs">

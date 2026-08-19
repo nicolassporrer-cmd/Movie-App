@@ -22,6 +22,43 @@ body {
 }
 .wrap { max-width: 1180px; margin: 0 auto; padding: 20px 16px calc(70px + env(safe-area-inset-bottom)); }
 
+/* Hero banner. The photo sits under a dark scrim so the title stays legible
+   whatever the image is; the gradient is also the fallback if banner.jpg is absent. */
+.hero {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  min-height: 190px;
+  display: flex;
+  align-items: flex-end;
+  background-color: #0f1216;
+  /* Three layers: scrim, the photo, then a gradient fallback. If banner.jpg is
+     missing the browser simply drops that layer and the gradient shows. */
+  background-image:
+    linear-gradient(180deg, rgba(10,12,15,.25) 0%, rgba(10,12,15,.55) 45%, rgba(10,12,15,.92) 100%),
+    url('/Movie-App/banner.jpg'),
+    linear-gradient(135deg, #1c2530 0%, #0f1216 60%);
+  background-size: cover, cover, cover;
+  background-position: center, center 38%, center;
+  background-repeat: no-repeat, no-repeat, no-repeat;
+}
+.hero-inner { padding: 20px 20px 16px; width: 100%; }
+.hero h1 {
+  font-size: 30px; margin: 0 0 4px; color: #fff; letter-spacing: -.02em;
+  text-shadow: 0 2px 14px rgba(0,0,0,.6);
+}
+.hero .build { color: rgba(255,255,255,.82); margin: 0; text-shadow: 0 1px 8px rgba(0,0,0,.7); }
+.hero .built-at { color: rgba(255,255,255,.55); font-size: 11.5px; margin-top: 2px; }
+
+@media (max-width: 560px) {
+  .hero { min-height: 132px; border-radius: 10px; }
+  .hero-inner { padding: 14px 14px 12px; }
+  .hero h1 { font-size: 22px; }
+  .hero .build { font-size: 11.5px; }
+  .hero .built-at { display: none; }
+}
+
 h1 { font-size: 21px; margin: 0 0 3px; }
 .build { color: var(--mut); font-size: 12.5px; margin: 0 0 14px; }
 .loading, .err, .empty { color: var(--mut); padding: 40px 0; text-align: center; }

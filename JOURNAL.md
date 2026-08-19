@@ -39,10 +39,40 @@ Decisions that would be expensive or dangerous to get wrong on a rebuild.
 | 12 | Resolve every person by lookup in `name.basics`, disambiguated on profession and birth year | Name collisions are common and attach an entirely wrong filmography without erroring | 2026-08-19 #4 |
 | 13 | **User removals are an exclusion list keyed by IMDb id, never a delete** | The database is regenerated from the IMDb datasets, so a deleted row reappears on the next build; an exclusion survives | 2026-08-19 #5 |
 | 14 | Any count shown next to a runtime-mutable collection must be computed client-side | Build-time counts go stale the instant something can be removed | 2026-08-19 #5 |
+| 15 | **OMDb is the only external key needed** — it returns RT, Metacritic *and* a hotlinkable poster URL | Verified by probe; removes the TMDB dependency entirely | 2026-08-19 #6 |
+| 16 | Never source images by web-image search | Returns whatever ranks rather than the verified film, so errors are undetectable at scale | 2026-08-19 #6 |
 
 ---
 
 ## Entries
+
+### 2026-08-19 #6 — OMDb enrichment: RT, Metacritic and posters from one key
+
+**Branch:** n/a · **Status:** enrichment running
+
+**What changed**
+- `scripts/enrich-omdb.js` fetches Rotten Tomatoes, Metacritic, IMDb and a poster URL per film. Idempotent, cached per `imdbId`, with `--probe`, `--dry-run`, `--limit` and `--unseen-first`.
+- Build now reads `data/omdb-cache.json` and renders real RT and Metacritic scores, real posters, plus an RT filter and RT sort.
+- `data/films.json` emitted by the build as the enrichment input.
+
+**Why**
+- **TMDB turned out to be unnecessary.** OMDb's standard response includes a `Poster` URL on `m.media-amazon.com`, verified to return HTTP 200 and hotlink cleanly. One key covers scores *and* posters, so the second signup — which the user was struggling with — was dropped entirely.
+
+**Rejected**
+- **Scraping Google Images for posters** (user's suggestion). Against Google's terms, actively blocked by CAPTCHA within a few dozen requests, hotlink-protected and rotting URLs, and — decisively — image search returns whatever ranks, not verifiably the right film. Across ~2,000 films that means an unknown number of silently wrong posters with no way to detect them. It would also hotlink copyrighted images from arbitrary hosts.
+- **Signing up for TMDB anyway** — settled by a one-call probe before spending the user's time on a second account.
+- **Preferring Letterboxd RSS posters over OMDb's** — RSS covers ~50 films, OMDb covers the whole library.
+
+**Gotchas discovered**
+- **OMDb's docs do not answer whether free responses include a poster.** They state only that the separate poster API (`img.omdbapi.com`) is patron-only, and say nothing about the `Poster` field in normal responses. Two searches and a docs fetch left it ambiguous; one API call settled it. When docs are silent about a field, probe rather than assume — and build the probe as a flag on the real script so it exercises the same code path that will run in production.
+- **`.env` can silently exist as a directory.** The user's key was never readable because something had created `.env` as a folder, with an abandoned `.crdownload` inside. `[ -f .env ]` failed while `ls` still showed `.env`, which reads as "the file is there" at a glance. Any script reading config should check it is a *file*, not merely that the path exists.
+
+**Files touched**
+- `scripts/enrich-omdb.js` — new
+- `scripts/build-mockup.js` — reads the OMDb cache; RT/Metacritic rendering, RT filter and sort
+- `data/films.json` — new build output
+
+---
 
 ### 2026-08-19 #5 — Manual film removal, as an exclusion list
 

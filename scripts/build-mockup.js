@@ -139,7 +139,19 @@ function rss(u) {
     rl.on('line', l => { const p = l.split('\t'); if (needed.has(p[0])) nameOf.set(p[0], p[1]); });
     rl.on('close', res);
   });
-  films.forEach(f => { f.dir = f.dirIds.map(n => nameOf.get(n)).filter(Boolean).slice(0, 2).join(', ') || null; });
+  const omdb = fs.existsSync(APP + 'data/omdb-cache.json') ? JSON.parse(fs.readFileSync(APP + 'data/omdb-cache.json', 'utf8')) : {};
+  let gotRt = 0, gotPoster = 0;
+  films.forEach(f => {
+    f.dir = f.dirIds.map(n => nameOf.get(n)).filter(Boolean).slice(0, 2).join(', ') || null;
+    const o = omdb[f.key];
+    if (o && !o.error) {
+      if (o.rt != null) { f.rt = o.rt; gotRt++; }
+      if (o.meta != null) f.meta = o.meta;
+      // OMDb posters cover far more of the library than the RSS window does
+      if (o.poster) { f.poster = o.poster; gotPoster++; }
+    }
+  });
+  console.log('omdb cache entries:', Object.keys(omdb).length, '| films with RT:', gotRt, '| with poster:', gotPoster);
 
   const all = [...films.values()];
   const counts = {
@@ -175,6 +187,7 @@ function rss(u) {
     '" data-g="', esc(f.genres.join('|')),
     '" data-imdb="', (f.imdb == null ? -1 : f.imdb), '" data-run="', (f.runtime == null ? -1 : f.runtime),
     '" data-y="', (f.y || 0), '" data-fr="', (f.fr ? 1 : 0), '" data-frv="', (f.fr ? f.fr.r : 0),
+    '" data-rt="', (f.rt == null ? -1 : f.rt),
     '" data-dir="', esc(f.dir || ''), '" data-t="', esc(f.t), '">',
     '<div class="p"><button class="rm" title="Remove from database">&times;</button>',
     '<button class="rs" title="Restore">&#8630; Restore</button>',
@@ -191,7 +204,9 @@ function rss(u) {
     '<div class="mt">', (f.y || DASH), ' \u00b7 ', (f.runtime ? f.runtime + 'm' : DASH), ' \u00b7 ', (f.dir ? esc(f.dir) : DASH), '</div>',
     '<div class="ch">', (f.genres.length ? f.genres.map(g => '<span>' + esc(g) + '</span>').join('') : '<span class="unk">no genre data</span>'), '</div>',
     '<div class="rt">', (f.imdb != null ? '<span class="im">IMDb ' + f.imdb.toFixed(1) + '</span>' : '<span class="unk">IMDb &mdash;</span>'),
-    '<span class="unk">RT &mdash;</span></div>',
+    (f.rt != null ? '<span class="rtm ' + (f.rt >= 60 ? 'fresh' : 'rot') + '">RT ' + f.rt + '%</span>' : '<span class="unk">RT &mdash;</span>'),
+    (f.meta != null ? '<span class="mc">MC ' + f.meta + '</span>' : ''),
+    '</div>',
     '<div class="you">',
     (f.mine ? '<span class="ys">You ' + stars(f.mine) + '</span>' : (f.seen ? '<span class="nu">Watched, not rated</span>' : '<span class="nu">Not seen</span>')),
     (f.fr ? '<span class="fs">' + esc(f.fr.who) + ' ' + stars(f.fr.r) + '</span>' : '<span class="nf">No friend rating</span>'),
@@ -251,6 +266,8 @@ h3{font-size:13.5px;margin:0;line-height:1.3}
 .ch span{font-size:10.5px;padding:1.5px 6px;border:1px solid var(--bd);border-radius:99px;color:var(--mut)}
 .rt{display:flex;gap:7px;font-size:11px}
 .im{color:#b8901f;font-weight:600}
+.rtm{font-weight:600}.rtm.fresh{color:#d2492a}.rtm.rot{color:#7a8b3a}
+.mc{color:var(--mut);font-weight:600}
 .unk{color:var(--mut);opacity:.45}
 .you{display:flex;flex-direction:column;gap:1px;font-size:11.5px;margin-top:auto}
 .ys{color:var(--acc);font-weight:600}
@@ -289,8 +306,9 @@ h3{font-size:13.5px;margin:0;line-height:1.3}
 <label>Genre<select id="fg"><option value="">All</option>${allGen.map(g => '<option>' + esc(g) + '</option>').join('')}</select></label>
 <label>Director<select id="fd"><option value="">All</option>${allDirs.map(d => '<option>' + esc(d) + '</option>').join('')}</select></label>
 <label>Min IMDb <span id="li">0.0</span><input type="range" id="fi" min="0" max="10" step="0.1" value="0"></label>
+<label>Min RT <span id="lr">0%</span><input type="range" id="fr2" min="0" max="100" step="5" value="0"></label>
 <label>Max runtime <span id="lu">300m</span><input type="range" id="fu" min="60" max="300" step="5" value="300"></label>
-<label>Sort by<select id="fs"><option value="imdb">IMDb</option><option value="t">Title</option><option value="frv">Friend rating</option><option value="run">Runtime</option><option value="y">Year</option></select></label>
+<label>Sort by<select id="fs"><option value="imdb">IMDb</option><option value="rt">Rotten Tomatoes</option><option value="t">Title</option><option value="frv">Friend rating</option><option value="run">Runtime</option><option value="y">Year</option></select></label>
 <label class="chk"><input type="checkbox" id="fo"> Friend-rated only</label>
 <button class="dice" id="dice">&#127922; Pick one for me</button>
 <span class="cnt" id="cnt"></span>
@@ -303,7 +321,7 @@ h3{font-size:13.5px;margin:0;line-height:1.3}
 <script>
 var D = [].slice.call(document.querySelectorAll('.c')).map(function(el){
   return {el:el, key:el.dataset.key, t:el.dataset.t, tabs:el.dataset.tabs.split('|'), g:el.dataset.g, imdb:+el.dataset.imdb,
-    run:+el.dataset.run, y:+el.dataset.y, fr:+el.dataset.fr, frv:+el.dataset.frv, dir:el.dataset.dir};
+    rt:+el.dataset.rt, run:+el.dataset.run, y:+el.dataset.y, fr:+el.dataset.fr, frv:+el.dataset.frv, dir:el.dataset.dir};
 });
 var tab='all', shown=[];
 function $(i){return document.getElementById(i);}
@@ -347,8 +365,8 @@ document.getElementById('g').addEventListener('click', function(e){
 });
 
 function apply(){
-  var g=$('fg').value,d=$('fd').value,i=+$('fi').value,u=+$('fu').value,s=$('fs').value,o=$('fo').checked;
-  $('li').textContent=i.toFixed(1); $('lu').textContent=u+'m';
+  var g=$('fg').value,d=$('fd').value,i=+$('fi').value,rt=+$('fr2').value,u=+$('fu').value,s=$('fs').value,o=$('fo').checked;
+  $('li').textContent=i.toFixed(1); $('lr').textContent=rt+'%'; $('lu').textContent=u+'m';
   shown=[];
   var tally={all:0,seen:0,towatch:0,discover:0,directors:0,bong:0,nv:0,removed:0};
   D.forEach(function(f){
@@ -361,6 +379,7 @@ function apply(){
       && (!g || f.g.split('|').indexOf(g)>-1)
       && (!d || f.dir.indexOf(d)>-1)
       && (i===0 || (f.imdb>=0 && f.imdb>=i))
+      && (rt===0 || (f.rt>=0 && f.rt>=rt))
       && (u===300 || (f.run>=0 && f.run<=u))
       && (!o || f.fr);
     f.el.style.display = ok ? '' : 'none';
@@ -390,7 +409,7 @@ function roll(){
   P.innerHTML='<h2>'+f.t+'</h2><div class="pm">'+(f.y||'\\u2014')+' \\u00b7 '+(f.run>=0?f.run+' min':'\\u2014')+' \\u00b7 '+(f.dir||'\\u2014')+'</div>'+
     '<div class="row"><div class="pp">'+(img?'<img src="'+img.src+'">':'')+'</div>'+
     '<div><p style="margin:0 0 8px">'+gen+'</p>'+
-    '<p style="margin:0"><strong>'+(f.imdb>=0?'IMDb '+f.imdb.toFixed(1):'IMDb \\u2014')+'</strong></p>'+
+    '<p style="margin:0"><strong>'+(f.imdb>=0?'IMDb '+f.imdb.toFixed(1):'IMDb \\u2014')+'</strong>'+(f.rt>=0?' \\u00b7 RT '+f.rt+'%':'')+'</p>'+
     '<p style="margin:8px 0 0;font-size:13px;opacity:.7">Picked from the '+shown.length+' films matching your current filters.</p></div></div>'+
     '<div class="acts"><button class="pri" id="again">Roll again</button><button onclick="closeOv()">Close</button></div>';
   $('ov').classList.add('on');
@@ -406,7 +425,7 @@ $('dice').addEventListener('click',roll);
     b.classList.add('on'); tab=b.dataset.t; apply();
   };
 });
-['fg','fd','fi','fu','fs','fo'].forEach(function(i){$(i).addEventListener('input',apply);});
+['fg','fd','fi','fr2','fu','fs','fo'].forEach(function(i){$(i).addEventListener('input',apply);});
 apply();
 </script>`;
 

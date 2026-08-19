@@ -37,10 +37,43 @@ Decisions that would be expensive or dangerous to get wrong on a rebuild.
 | 10 | **One film store keyed by `tconst`; tabs are views over it, never their own lists** | Per-tab lists silently duplicate any film belonging to two collections | 2026-08-19 #4 |
 | 11 | Collection membership lives in `data/collections.json`, not in code | Which films count as "Nouvelle Vague" is an editorial judgement and must stay visible and arguable | 2026-08-19 #4 |
 | 12 | Resolve every person by lookup in `name.basics`, disambiguated on profession and birth year | Name collisions are common and attach an entirely wrong filmography without erroring | 2026-08-19 #4 |
+| 13 | **User removals are an exclusion list keyed by IMDb id, never a delete** | The database is regenerated from the IMDb datasets, so a deleted row reappears on the next build; an exclusion survives | 2026-08-19 #5 |
+| 14 | Any count shown next to a runtime-mutable collection must be computed client-side | Build-time counts go stale the instant something can be removed | 2026-08-19 #5 |
 
 ---
 
 ## Entries
+
+### 2026-08-19 #5 — Manual film removal, as an exclusion list
+
+**Branch:** n/a (planning) · **Status:** mockup v4 built and verified
+
+**What changed**
+- Hovering a film card reveals a **×** button that removes it from the database view.
+- Removals go to a **Removed** tab where each card carries a **Restore** button.
+- An undo toast appears for six seconds after every removal or restore.
+- All tab counts recompute live; the shuffle never picks an excluded film.
+- Exclusions persist in `localStorage` under `movieapp.excluded.v1`, keyed by IMDb id.
+
+**Why**
+- **Removal must never be a delete.** The database is *regenerated* from the IMDb datasets on every build, so a deleted row would silently reappear on the next refresh — the user would remove the same film repeatedly and conclude the feature was broken. An exclusion list keyed by film id survives any rebuild, which is the only shape that actually works here.
+- This is also the project's own rule (`CLAUDE.md`: upsert, never overwrite; absent data is a no-op, never a deletion) arriving at the same answer from the data-integrity side.
+
+**Rejected**
+- **Actually deleting the row from the store** — undone by the next build. See above.
+- **A hard delete with a confirmation dialog** — a modal on every removal makes bulk cleanup miserable, and it still would not survive a rebuild. Undo-after-the-fact is both cheaper to use and safer.
+- **Excluding by title+year** — three Letterboxd rows never resolved to an IMDb id, and alternate cuts share titles. IMDb id is the stable key; unresolved rows fall back to their `lb:` key.
+- **Hiding removed films entirely** — a removal with no way to review or reverse it is a black hole. The Removed tab makes the exclusion list inspectable, which matters when it is the thing that persists.
+
+**Gotchas discovered**
+- **`[].slice.call(aSet)` returns an empty array.** A `Set` is not array-like — it has no `length` — so the persistence call wrote `[]` on every removal. The UI looked perfect: counts updated, the card greyed out, undo worked. Only a reload revealed that nothing had ever been saved. Use `Array.from(set)` or spread. This class of bug is invisible to UI testing and only shows up if you explicitly assert on what was *stored*, then reload.
+- **Tab counts baked in at build time go stale the moment anything is removable.** They were rendered server-side into the tab labels. Any feature that changes membership at runtime forces them to be computed client-side on every filter pass.
+
+**Files touched**
+- `scripts/build-mockup.js` — removal, restore, undo toast, live tab counts, exclusion-aware shuffle
+- `mockup-browse.html` — v4 regenerated
+
+---
 
 ### 2026-08-19 #4 — Collections (Bong Joon Ho, Nouvelle Vague) and the All-films view
 

@@ -171,12 +171,14 @@ function rss(u) {
   all.sort((a, b) => (b.imdb || 0) - (a.imdb || 0) || b.votes - a.votes);
 
   const card = f => [
-    '<article class="c" data-tabs="', TABS.filter(t => inTab(f, t)).join('|'),
+    '<article class="c" data-key="', esc(f.key), '" data-tabs="', TABS.filter(t => inTab(f, t)).join('|'),
     '" data-g="', esc(f.genres.join('|')),
     '" data-imdb="', (f.imdb == null ? -1 : f.imdb), '" data-run="', (f.runtime == null ? -1 : f.runtime),
     '" data-y="', (f.y || 0), '" data-fr="', (f.fr ? 1 : 0), '" data-frv="', (f.fr ? f.fr.r : 0),
     '" data-dir="', esc(f.dir || ''), '" data-t="', esc(f.t), '">',
-    '<div class="p">', f.poster ? '<img loading="lazy" src="' + f.poster + '" alt="">' : '<div class="ph">' + esc(f.t) + '</div>', '</div>',
+    '<div class="p"><button class="rm" title="Remove from database">&times;</button>',
+    '<button class="rs" title="Restore">&#8630; Restore</button>',
+    f.poster ? '<img loading="lazy" src="' + f.poster + '" alt="">' : '<div class="ph">' + esc(f.t) + '</div>', '</div>',
     '<div class="b">',
     '<div class="flags">',
     f.seen ? '<span class="fl seen">Seen</span>' : '',
@@ -222,8 +224,21 @@ input[type=range]{width:112px;padding:0;accent-color:var(--acc)}
 .cnt{margin-left:auto;font-size:13px;color:var(--mut);align-self:center}
 .g{display:grid;grid-template-columns:repeat(auto-fill,minmax(176px,1fr));gap:14px}
 .c{background:var(--card);border:1px solid var(--bd);border-radius:10px;overflow:hidden;display:flex;flex-direction:column}
-.p{aspect-ratio:2/3;background:#8881;overflow:hidden}
+.p{aspect-ratio:2/3;background:#8881;overflow:hidden;position:relative}
 .p img{width:100%;height:100%;object-fit:cover;display:block}
+.rm{position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:50%;border:0;background:#000a;color:#fff;font-size:17px;line-height:1;cursor:pointer;opacity:0;transition:opacity .12s;z-index:2}
+.c:hover .rm{opacity:1}
+.rm:hover{background:#c0392b}
+.rs{position:absolute;top:6px;left:6px;border:0;border-radius:6px;background:var(--acc);color:#fff;font:inherit;font-size:11px;font-weight:700;padding:4px 8px;cursor:pointer;display:none;z-index:2}
+.c.gone .rs{display:block}
+.c.gone .rm{display:none}
+.c.gone .p img{filter:grayscale(1);opacity:.45}
+.c.gone{opacity:.75}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:11px 16px;border-radius:9px;font-size:13.5px;display:none;align-items:center;gap:14px;z-index:20;box-shadow:0 6px 24px #0004}
+.toast.on{display:flex}
+.toast button{background:none;border:0;color:var(--acc);font:inherit;font-weight:700;cursor:pointer;padding:0}
+.tc{opacity:.6;font-weight:600}
+.rmtab{margin-left:auto;opacity:.75}
 .ph{width:100%;height:100%;display:grid;place-items:center;text-align:center;padding:10px;font-size:12px;color:var(--mut)}
 .b{padding:9px 10px 11px;display:flex;flex-direction:column;gap:6px;flex:1}
 h3{font-size:13.5px;margin:0;line-height:1.3}
@@ -261,13 +276,14 @@ h3{font-size:13.5px;margin:0;line-height:1.3}
 <strong>Nouvelle Vague</strong> has no formal membership; the list used is the Cahiers du cinéma core plus the Left Bank group, defined in <code>data/collections.json</code> and editable. Films from ${NV_FROM}&ndash;${NV_TO} are badged as the movement's active period (${nvCore} of ${counts.nv}); later films by the same directors are kept so the database stays complete.<br>
 <strong>Blank (&mdash;):</strong> Rotten Tomatoes everywhere, and posters for all but the ~50 films in the RSS window. Both need API keys.</div>
 <div class="tabs">
-<button class="tab on" data-t="all">All films (${counts.all})</button>
-<button class="tab" data-t="seen">Seen (${counts.seen})</button>
-<button class="tab" data-t="towatch">To Watch (${counts.towatch})</button>
-<button class="tab" data-t="discover">Unseen top ${TOP_N} (${counts.discover})</button>
-<button class="tab" data-t="directors">Top-50 directors (${counts.directors})</button>
-<button class="tab" data-t="bong">Bong Joon Ho (${counts.bong})</button>
-<button class="tab" data-t="nv">Nouvelle Vague (${counts.nv})</button>
+<button class="tab on" data-t="all">All films <span class="tc" data-tc="all"></span></button>
+<button class="tab" data-t="seen">Seen <span class="tc" data-tc="seen"></span></button>
+<button class="tab" data-t="towatch">To Watch <span class="tc" data-tc="towatch"></span></button>
+<button class="tab" data-t="discover">Unseen top ${TOP_N} <span class="tc" data-tc="discover"></span></button>
+<button class="tab" data-t="directors">Top-50 directors <span class="tc" data-tc="directors"></span></button>
+<button class="tab" data-t="bong">Bong Joon Ho <span class="tc" data-tc="bong"></span></button>
+<button class="tab" data-t="nv">Nouvelle Vague <span class="tc" data-tc="nv"></span></button>
+<button class="tab rmtab" data-t="removed">Removed <span class="tc" data-tc="removed"></span></button>
 </div>
 <div class="f">
 <label>Genre<select id="fg"><option value="">All</option>${allGen.map(g => '<option>' + esc(g) + '</option>').join('')}</select></label>
@@ -283,19 +299,65 @@ h3{font-size:13.5px;margin:0;line-height:1.3}
 <div class="empty" id="e"><p><strong>Nothing matches these filters.</strong></p><p>Widen a slider, or clear the genre.</p></div>
 </div>
 <div class="ov" id="ov"><div class="pick" id="pick"></div></div>
+<div class="toast" id="toast"><span id="tmsg"></span><button id="tundo">Undo</button></div>
 <script>
 var D = [].slice.call(document.querySelectorAll('.c')).map(function(el){
-  return {el:el, t:el.dataset.t, tabs:el.dataset.tabs.split('|'), g:el.dataset.g, imdb:+el.dataset.imdb,
+  return {el:el, key:el.dataset.key, t:el.dataset.t, tabs:el.dataset.tabs.split('|'), g:el.dataset.g, imdb:+el.dataset.imdb,
     run:+el.dataset.run, y:+el.dataset.y, fr:+el.dataset.fr, frv:+el.dataset.frv, dir:el.dataset.dir};
 });
 var tab='all', shown=[];
 function $(i){return document.getElementById(i);}
+
+/* Removal is an EXCLUSION LIST, never a delete. The database is rebuilt from the
+   IMDb datasets, so a deleted row would simply reappear on the next build;
+   an exclusion keyed by film id survives a rebuild. */
+var STORE='movieapp.excluded.v1';
+var excluded = (function(){ try { return new Set(JSON.parse(localStorage.getItem(STORE)||'[]')); } catch(e){ return new Set(); } })();
+/* Array.from, not [].slice.call: a Set has no length, so slice.call returns []
+   and every exclusion is silently persisted as an empty list. */
+function persist(){ try { localStorage.setItem(STORE, JSON.stringify(Array.from(excluded))); } catch(e){} }
+
+var toastTimer=null, lastUndo=null;
+function toast(msg, undoFn){
+  $('tmsg').textContent=msg; lastUndo=undoFn;
+  $('toast').classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(function(){ $('toast').classList.remove('on'); }, 6000);
+}
+$('tundo').addEventListener('click', function(){
+  if(lastUndo) lastUndo();
+  $('toast').classList.remove('on');
+});
+
+function setExcluded(f, on){
+  if(on) excluded.add(f.key); else excluded['delete'](f.key);
+  f.el.classList.toggle('gone', on);
+  persist(); apply();
+}
+document.getElementById('g').addEventListener('click', function(e){
+  var btn=e.target.closest('.rm,.rs'); if(!btn) return;
+  var el=btn.closest('.c'); var f=D.filter(function(x){return x.el===el;})[0]; if(!f) return;
+  if(btn.classList.contains('rm')){
+    setExcluded(f,true);
+    toast('Removed "'+f.t+'"', function(){ setExcluded(f,false); });
+  } else {
+    setExcluded(f,false);
+    toast('Restored "'+f.t+'"', function(){ setExcluded(f,true); });
+  }
+});
+
 function apply(){
   var g=$('fg').value,d=$('fd').value,i=+$('fi').value,u=+$('fu').value,s=$('fs').value,o=$('fo').checked;
   $('li').textContent=i.toFixed(1); $('lu').textContent=u+'m';
   shown=[];
+  var tally={all:0,seen:0,towatch:0,discover:0,directors:0,bong:0,nv:0,removed:0};
   D.forEach(function(f){
-    var ok = f.tabs.indexOf(tab)>-1
+    var gone=excluded.has(f.key);
+    f.el.classList.toggle('gone', gone);
+    if(gone) tally.removed++;
+    else f.tabs.forEach(function(t){ if(tally[t]!==undefined) tally[t]++; });
+    var inThisTab = tab==='removed' ? gone : (!gone && f.tabs.indexOf(tab)>-1);
+    var ok = inThisTab
       && (!g || f.g.split('|').indexOf(g)>-1)
       && (!d || f.dir.indexOf(d)>-1)
       && (i===0 || (f.imdb>=0 && f.imdb>=i))
@@ -303,6 +365,9 @@ function apply(){
       && (!o || f.fr);
     f.el.style.display = ok ? '' : 'none';
     if(ok) shown.push(f);
+  });
+  Object.keys(tally).forEach(function(k){
+    var n=document.querySelector('.tc[data-tc="'+k+'"]'); if(n) n.textContent='('+tally[k]+')';
   });
   shown.sort(function(a,b){
     if(s==='t') return a.t.localeCompare(b.t);

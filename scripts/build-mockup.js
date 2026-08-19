@@ -411,6 +411,10 @@ apply();
 </script>`;
 
   fs.writeFileSync(APP + 'mockup-browse.html', html, 'utf8');
+  fs.writeFileSync(APP + 'data/films.json', JSON.stringify(all.map(f => ({
+    key: f.key, imdbId: f.resolved ? f.key : null, title: f.t, year: f.y,
+    seen: f.seen, wl: f.wl, top1000: f.top1000, votes: f.votes
+  }))), 'utf8');
   console.log('\nunique films in store:', counts.all.toLocaleString(), '| unresolved letterboxd rows:', unresolved);
   console.log('tabs:', JSON.stringify(counts));
   console.log('nouvelle vague core period (' + NV_FROM + '-' + NV_TO + '):', nvCore, 'of', counts.nv);

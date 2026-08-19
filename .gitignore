@@ -21,3 +21,4 @@ node_modules/
 # Letterboxd exports — personal data, never commit
 data/raw/
 *.zip
+data/omdb-cache.json

@@ -9,8 +9,7 @@ transcripts/
 .env
 *.env.local
 
-# Plans (gitignore if you prefer — remove this line to track them)
-plans/
+# Plans — TRACKED on purpose: they are part of the rebuild spec (see JOURNAL.md)
 
 # Claude local settings
 .claude/settings.local.json
@@ -18,3 +17,7 @@ plans/
 
 # Node / npm
 node_modules/
+
+# Letterboxd exports — personal data, never commit
+data/raw/
+*.zip

@@ -23,6 +23,6 @@ Session closer. Merges the feature branch, commits changes, updates documentatio
 
 5. **Run `/improve-prompt`** if this session had a learnable output (EOD import, significant build, PROMPT.md equivalent). Skip for routine maintenance sessions.
 
-6. **Update Confluence docs.** Invoke the project's Confluence update skill to sync documentation with what changed.
+6. **Write the JOURNAL.md entry.** Prepend a new entry at the top of the `## Entries` section using the template format. Fill in every field — **Rejected** and **Gotchas discovered** are the two that make a future rebuild cheaper, so never leave them as "n/a" without checking. If a decision made this session is structural (expensive or dangerous to get wrong on a rebuild), also add a row to the **Rebuild notes** table. Copy any gotcha into the Known Gotchas section of `CLAUDE.md` as well — same text, two audiences: CLAUDE.md is read while building, JOURNAL.md while rebuilding.
 
 7. **Session summary.** Output: what shipped, what's pending, what's next.

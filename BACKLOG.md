@@ -1,4 +1,4 @@
-# [App Name] — Backlog
+# Movie-App — Backlog
 
 Items ordered by priority. Status lifecycle: `unplanned` → `planned` → `in_progress` → done.
 

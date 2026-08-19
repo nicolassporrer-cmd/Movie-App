@@ -14,8 +14,9 @@ export default function Subscriptions({ providers, counts, mine, onToggle, onCle
       {open ? (
         <div className="subs-panel">
           <p className="subs-help">
-            Tick what you subscribe to. Films on those services get a green badge, and
-            the <strong>On my services</strong> filter and the shuffle will use them.
+            {mine.size
+              ? <>Films on your services get a green badge, and <strong>On my services</strong> and the shuffle use them.</>
+              : <><strong>Nothing picked yet</strong> &mdash; so the streaming filter currently matches <em>any</em> service, including ones you do not pay for. Tick yours below to narrow it.</>}
           </p>
           <div className="subs-list">
             {providers.map((name, i) => (

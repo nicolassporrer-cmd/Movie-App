@@ -180,7 +180,8 @@ export default function App() {
       </nav>
 
       <Filters data={data} filters={filters} setFilters={setFilters}
-        count={visible.length} onShuffle={roll} hasProviders={!!(data.providers || []).length} />
+        count={visible.length} onShuffle={roll} hasProviders={!!(data.providers || []).length}
+        mineCount={mine.size} onNeedServices={() => setSubsOpen(true)} />
 
       <Subscriptions
         providers={data.providers || []}

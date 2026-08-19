@@ -1,6 +1,6 @@
 import { SORTS, RUNTIME_MAX } from './constants.js';
 
-export default function Filters({ data, filters, setFilters, count, onShuffle, hasProviders }) {
+export default function Filters({ data, filters, setFilters, count, onShuffle, hasProviders, mineCount, onNeedServices }) {
   const set = (key, value) => setFilters(f => ({ ...f, [key]: value }));
 
   return (
@@ -57,11 +57,16 @@ export default function Filters({ data, filters, setFilters, count, onShuffle, h
         Friend-rated only
       </label>
 
+      {/* The label must state what the filter actually does. With no services picked
+          it matches ANY streaming service, so it must not claim to be "mine". */}
       {hasProviders ? (
         <label className="check">
           <input type="checkbox" checked={filters.streamingOnly}
-            onChange={e => set('streamingOnly', e.target.checked)} />
-          On my services
+            onChange={e => {
+              set('streamingOnly', e.target.checked);
+              if (e.target.checked && !mineCount) onNeedServices();
+            }} />
+          {mineCount ? 'On my services (' + mineCount + ')' : 'On any streaming service'}
         </label>
       ) : null}
 

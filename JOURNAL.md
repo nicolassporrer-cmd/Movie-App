@@ -46,6 +46,39 @@ Decisions that would be expensive or dangerous to get wrong on a rebuild.
 
 ## Entries
 
+### 2026-08-19 #10 — Letterboxd auto-sync for watched films; three collection tabs removed
+
+**Branch:** `main` · **Status:** shipped
+
+**What changed**
+- `scripts/sync-letterboxd.cjs` reads the public RSS diary and marks newly-watched films as seen, carrying the rating across. Wired into the daily workflow.
+- A watched film drops off **To watch** automatically — the tab is defined as `w && !s`, so setting `seen` is sufficient. No separate removal step.
+- Films watched that are not in the catalogue are **added** with whatever the feed provides; runtime, genres and director stay null until the next full `npm run data`.
+- Removed the Directors, Bong Joon Ho and Nouvelle Vague tabs. No films removed — 2,253 still present, reachable from All films and the director dropdown.
+- `refresh-scores.yml` became `daily-refresh.yml`: Letterboxd sync, then OMDb scores.
+
+**Why**
+- The watchlist genuinely cannot be automated. Letterboxd publishes a **diary** feed but no **watchlist** feed, and their HTML returns 403 to automated clients. Watchlist changes still require a CSV export — worth stating plainly rather than implying full automation.
+- The sync runs before the key check and does not depend on it, so a missing OMDb secret degrades to "no scores today" instead of blocking the watched-list update.
+
+**Rejected**
+- **Matching feed entries on TMDB id.** The feed carries one, but the dataset is keyed by IMDb id and nothing maps between them offline. Title+year with the existing vote-weighted resolution is the practical join.
+- **Skipping films that are not in the catalogue.** Silently ignoring a film the user just watched is the worst outcome; adding a sparse record that fills in later is honest and visible.
+- **Treating an empty feed as authoritative.** It now short-circuits — an empty response means "nothing to report", never "unwatch everything". Same principle as the upsert rule.
+
+**Gotchas discovered**
+- **Letterboxd RSS carries HTML entities, and normalising without decoding creates duplicates.** `Don&#039;t Look Up` normalises to `don039tlookup` — the entity's digits survive the alphanumeric filter — so it failed to match its own record and was queued as a new film. Caught only because a dry run listed two additions where one was obviously already in the library. Decode entities before any normalisation.
+- **Removing the collection tabs exposed a director-matching bug they had been masking.** The dropdown matched the *display* string, capped at two names for card legibility, so any third-billed director was unfindable: it reported 10 Bong Joon Ho films where the tab had shown 12. **99 films have 3+ credited directors.** Films now carry `da`, the full credit list, used for filtering and search only.
+- **A script that adds records must recompute every derived count, not just the obvious ones.** The sync updated `all`, `seen` and `watchlist` but left `withPoster` stale, so the header under-reported by two. Recompute the whole block.
+
+**Files touched**
+- `scripts/sync-letterboxd.cjs` — new
+- `scripts/build-data.cjs`, `src/App.jsx` — full director credits for matching
+- `src/constants.js` — five tabs
+- `.github/workflows/daily-refresh.yml` — replaces `refresh-scores.yml`
+
+---
+
 ### 2026-08-19 #9 — Shipped: Vite + React app live on GitHub Pages
 
 **Branch:** `main` · **Status:** deployed and verified at https://nicolassporrer-cmd.github.io/Movie-App/

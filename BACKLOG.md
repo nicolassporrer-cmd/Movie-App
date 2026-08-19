@@ -22,9 +22,10 @@ Items ordered by priority. Status lifecycle: `unplanned` → `planned` → `in_p
 
 | # | Item | Notes |
 |---|------|-------|
-| 2 | Cross-device sync for removals | Currently `localStorage`, so per-device. Options: commit an exclusions file (synced but read-only on device), or add a small backend. |
+| 2 | Watchlist auto-sync | Not possible from Letterboxd — they publish a diary feed but no watchlist feed, and their HTML 403s bots. Needs a fresh CSV export whenever the watchlist changes. |
+| 7 | Cross-device sync for removals | Currently `localStorage`, so per-device. Options: commit an exclusions file (synced but read-only on device), or add a small backend. |
 | 3 | Automated catalogue refresh | Scores now refresh daily. The *catalogue* (new IMDb films, new Letterboxd exports) still needs a local `npm run data`, since it pulls ~500 MB of datasets. |
-| 4 | Friends' ratings | Parked. Needs CSV exports from Regelegorila and thiboudon; RSS alone covers 6 of 170 films. |
+| 4 | Friends' ratings | Parked at your request. Needs CSV exports from Regelegorila and thiboudon; RSS alone covers 6 of 170 films. |
 | 5 | Manual override file for title matches | For films where title+year resolves to the wrong IMDb entry. The vote-weighted heuristic handles the general case. |
 | 6 | Private hosting | Only if the public URL becomes a concern — Pages sites are always public. |
 

@@ -1,8 +1,8 @@
 /* Builds mockup-browse.html from real sources only.
-   NO invented metadata: anything unknown renders as an explicit dash. */
+   One deduplicated film store; tabs are views over it. Nothing is invented. */
 const fs = require('fs'), zlib = require('zlib'), readline = require('readline');
 const D = 'C:/dev/_letterboxd_data/';
-const OUT = 'C:/dev/Movie-App/mockup-browse.html';
+const APP = 'C:/dev/Movie-App/';
 const MIN_VOTES = 50000, TOP_N = 1000;
 
 const norm = s => String(s).toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -33,17 +33,21 @@ function rss(u) {
   [...me, ...reg].forEach(i => { if (i.poster) poster[norm(i.title) + '|' + i.year] = i.poster; });
   reg.forEach(i => { if (i.rating) friend[norm(i.title) + '|' + i.year] = { who: 'Regelegorila', r: +i.rating }; });
 
-  const DIRS = JSON.parse(fs.readFileSync('C:/dev/Movie-App/data/top50-directors.json', 'utf8'));
-  const dirIds = new Set(DIRS.map(d => d.id));
+  const TOP50 = JSON.parse(fs.readFileSync(APP + 'data/top50-directors.json', 'utf8'));
+  const COLL = JSON.parse(fs.readFileSync(APP + 'data/collections.json', 'utf8'));
+  const top50Ids = new Set(TOP50.map(d => d.id));
+  const bongIds = new Set(COLL['bong-joon-ho'].directors.map(d => d.id));
+  const nvIds = new Set(COLL['nouvelle-vague'].directors.map(d => d.id));
+  const nvGroup = new Map(COLL['nouvelle-vague'].directors.map(d => [d.id, d.group]));
+  const [NV_FROM, NV_TO] = COLL['nouvelle-vague'].corePeriod;
 
   const rat = new Map();
   fs.readFileSync(D + 'ratings.tsv', 'utf8').split('\n').forEach((l, i) => {
     if (!i) return; const p = l.split('\t'); if (p.length < 3) return;
     rat.set(p[0], { r: +p[1], v: +p[2] });
   });
-  console.log('rated titles:', rat.size.toLocaleString());
 
-  // basics: MOVIES only. Without this filter the top of the ratings file is TV episodes.
+  // MOVIES only — without this the top of the ratings file is TV episodes
   const byId = new Map(), byTitle = new Map();
   await new Promise(res => {
     const rl = stream('basics.tsv.gz');
@@ -70,106 +74,135 @@ function rss(u) {
     });
     rl.on('close', res);
   });
-  console.log('movies with credited director:', crew.size.toLocaleString());
-
-  const byDirector = new Map();
-  crew.forEach((ds, tid) => { if (ds.some(d => dirIds.has(d))) byDirector.set(tid, ds.filter(d => dirIds.has(d))); });
-  console.log('films by the top-50 directors:', byDirector.size.toLocaleString());
 
   const topPool = [...byId.values()].filter(m => { const r = rat.get(m.id); return r && r.v >= MIN_VOTES; })
     .map(m => Object.assign({}, m, rat.get(m.id)))
     .sort((a, b) => b.r - a.r || b.v - a.v);
   const top = topPool.slice(0, TOP_N);
+  const topIds = new Set(top.map(m => m.id));
 
-  const selected = new Set(top.map(m => m.id));
-  byDirector.forEach((_, id) => selected.add(id));
-  const lbIds = new Map();
-  [...watched, ...wl].forEach(r => {
-    const id = byTitle.get(norm(r.Name) + '|' + r.Year);
-    if (id) { lbIds.set(norm(r.Name) + '|' + r.Year, id); selected.add(id); }
+  // ---- ONE deduplicated store, keyed by tconst (or lb:<key> when unresolved)
+  const films = new Map();
+  const flagsOf = id => {
+    const ds = crew.get(id) || [];
+    return {
+      top50: ds.some(d => top50Ids.has(d)),
+      bong: ds.some(d => bongIds.has(d)),
+      nv: ds.some(d => nvIds.has(d)),
+      nvGroups: [...new Set(ds.filter(d => nvIds.has(d)).map(d => nvGroup.get(d)))]
+    };
+  };
+  const ensure = id => {
+    if (films.has(id)) return films.get(id);
+    const m = byId.get(id), r = rat.get(id), f = flagsOf(id);
+    const rec = {
+      key: id, t: m.title, y: m.year, runtime: m.runtime, genres: m.genres,
+      imdb: r ? r.r : null, votes: r ? r.v : 0, dirIds: crew.get(id) || [],
+      seen: false, wl: false, mine: null, top1000: topIds.has(id),
+      top50: f.top50, bong: f.bong, nv: f.nv, nvGroups: f.nvGroups,
+      nvCore: f.nv && m.year >= NV_FROM && m.year <= NV_TO, resolved: true
+    };
+    films.set(id, rec); return rec;
+  };
+
+  topIds.forEach(id => ensure(id));
+  crew.forEach((ds, id) => { if (ds.some(d => top50Ids.has(d) || bongIds.has(d) || nvIds.has(d))) ensure(id); });
+
+  let unresolved = 0;
+  const attachLb = (rows, field) => rows.forEach(r => {
+    const k = norm(r.Name) + '|' + r.Year;
+    const id = byTitle.get(k);
+    let rec;
+    if (id) rec = ensure(id);
+    else {
+      const lk = 'lb:' + k;
+      if (!films.has(lk)) {
+        films.set(lk, { key: lk, t: r.Name, y: +r.Year || null, runtime: null, genres: [], imdb: null, votes: 0, dirIds: [], seen: false, wl: false, mine: null, top1000: false, top50: false, bong: false, nv: false, nvGroups: [], nvCore: false, resolved: false });
+        unresolved++;
+      }
+      rec = films.get(lk);
+    }
+    rec[field] = true;
+    if (field === 'seen') rec.mine = myRating[k] || null;
+    if (poster[k]) rec.poster = poster[k];
+    if (friend[k]) rec.fr = friend[k];
   });
+  attachLb(watched, 'seen');
+  attachLb(wl, 'wl');
 
+  // ---- director names, only those we display
   const needed = new Set();
-  selected.forEach(id => (crew.get(id) || []).forEach(n => needed.add(n)));
+  films.forEach(f => f.dirIds.forEach(n => needed.add(n)));
   const nameOf = new Map();
   await new Promise(res => {
     const rl = stream('names.tsv.gz');
     rl.on('line', l => { const p = l.split('\t'); if (needed.has(p[0])) nameOf.set(p[0], p[1]); });
     rl.on('close', res);
   });
-  console.log('director names resolved:', nameOf.size.toLocaleString());
+  films.forEach(f => { f.dir = f.dirIds.map(n => nameOf.get(n)).filter(Boolean).slice(0, 2).join(', ') || null; });
 
-  const dirNames = id => (crew.get(id) || []).map(n => nameOf.get(n)).filter(Boolean).slice(0, 2).join(', ') || null;
-  const enrich = id => {
-    const m = byId.get(id); if (!m) return null;
-    const r = rat.get(id);
-    return { runtime: m.runtime, genres: m.genres, imdb: r ? r.r : null, votes: r ? r.v : null, dir: dirNames(id) };
+  const all = [...films.values()];
+  const counts = {
+    all: all.length,
+    seen: all.filter(f => f.seen).length,
+    towatch: all.filter(f => f.wl && !f.seen).length,
+    discover: all.filter(f => f.top1000 && !f.seen).length,
+    directors: all.filter(f => f.top50 && !f.seen).length,
+    bong: all.filter(f => f.bong).length,
+    nv: all.filter(f => f.nv).length
   };
+  const nvCore = all.filter(f => f.nvCore).length;
 
-  const watchedLoose = new Set(watched.map(r => norm(r.Name)));
-  const wlLoose = new Set(wl.map(r => norm(r.Name)));
-  const rows = [];
-  const push = (title, year, status, id, extra) => {
-    const e = id ? enrich(id) : null;
-    rows.push(Object.assign({
-      t: title, y: year || null, status: status,
-      runtime: e ? e.runtime : null, genres: e ? e.genres : [], imdb: e ? e.imdb : null,
-      votes: e ? e.votes : null, dir: e ? e.dir : null,
-      p: poster[norm(title) + '|' + year] || null, fr: friend[norm(title) + '|' + year] || null,
-      resolved: !!id, mine: null, onWl: false, who: null
-    }, extra || {}));
-  };
-
-  watched.forEach(r => push(r.Name, r.Year, 'seen', lbIds.get(norm(r.Name) + '|' + r.Year), { mine: myRating[norm(r.Name) + '|' + r.Year] || null }));
-  wl.forEach(r => push(r.Name, r.Year, 'towatch', lbIds.get(norm(r.Name) + '|' + r.Year), {}));
-
-  const unseenTop = top.filter(m => !watchedLoose.has(norm(m.title)) && !watchedLoose.has(norm(m.orig)));
-  unseenTop.forEach(m => push(m.title, m.year, 'discover', m.id, { onWl: wlLoose.has(norm(m.title)) }));
-
-  const dirRows = [];
-  byDirector.forEach((ds, id) => {
-    const m = byId.get(id);
-    if (!m || watchedLoose.has(norm(m.title))) return;
-    dirRows.push({ m: m, v: (rat.get(id) || { v: 0 }).v, who: ds.map(n => nameOf.get(n)).filter(Boolean).join(', ') });
-  });
-  dirRows.sort((a, b) => b.v - a.v);
-  dirRows.forEach(x => push(x.m.title, x.m.year, 'directors', x.m.id, { onWl: wlLoose.has(norm(x.m.title)), who: x.who }));
+  const inTab = (f, t) => t === 'all' ? true
+    : t === 'seen' ? f.seen
+    : t === 'towatch' ? (f.wl && !f.seen)
+    : t === 'discover' ? (f.top1000 && !f.seen)
+    : t === 'directors' ? (f.top50 && !f.seen)
+    : t === 'bong' ? f.bong
+    : t === 'nv' ? f.nv : false;
+  const TABS = ['all', 'seen', 'towatch', 'discover', 'directors', 'bong', 'nv'];
 
   const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   const DASH = '<span class="unk">&mdash;</span>';
   const stars = v => v == null ? '' : '\u2605'.repeat(Math.floor(v)) + (v % 1 ? '\u00bd' : '');
-  const allGen = [...new Set(rows.flatMap(r => r.genres))].sort();
+  const allGen = [...new Set(all.flatMap(f => f.genres))].sort();
+  const allDirs = [...new Set([...TOP50.map(d => d.name), ...COLL['bong-joon-ho'].directors.map(d => d.name), ...COLL['nouvelle-vague'].directors.map(d => d.name)])].sort();
+
+  all.sort((a, b) => (b.imdb || 0) - (a.imdb || 0) || b.votes - a.votes);
 
   const card = f => [
-    '<article class="c" data-s="', f.status, '" data-g="', esc(f.genres.join('|')),
+    '<article class="c" data-tabs="', TABS.filter(t => inTab(f, t)).join('|'),
+    '" data-g="', esc(f.genres.join('|')),
     '" data-imdb="', (f.imdb == null ? -1 : f.imdb), '" data-run="', (f.runtime == null ? -1 : f.runtime),
     '" data-y="', (f.y || 0), '" data-fr="', (f.fr ? 1 : 0), '" data-frv="', (f.fr ? f.fr.r : 0),
     '" data-dir="', esc(f.dir || ''), '" data-t="', esc(f.t), '">',
-    '<div class="p">', f.p ? '<img loading="lazy" src="' + f.p + '" alt="">' : '<div class="ph">' + esc(f.t) + '</div>', '</div>',
+    '<div class="p">', f.poster ? '<img loading="lazy" src="' + f.poster + '" alt="">' : '<div class="ph">' + esc(f.t) + '</div>', '</div>',
     '<div class="b">',
-    f.onWl ? '<div class="flag">On your watchlist</div>' : '',
-    f.who ? '<div class="flag dirflag">' + esc(f.who) + '</div>' : '',
+    '<div class="flags">',
+    f.seen ? '<span class="fl seen">Seen</span>' : '',
+    (f.wl && !f.seen) ? '<span class="fl wl">Watchlist</span>' : '',
+    f.nvCore ? '<span class="fl nv">Nouvelle Vague</span>' : (f.nv ? '<span class="fl nvl">NV director</span>' : ''),
+    f.bong ? '<span class="fl bong">Bong Joon Ho</span>' : '',
+    (f.top1000 && !f.seen) ? '<span class="fl top">Top 1000</span>' : '',
+    '</div>',
     '<h3>', esc(f.t), '</h3>',
     '<div class="mt">', (f.y || DASH), ' \u00b7 ', (f.runtime ? f.runtime + 'm' : DASH), ' \u00b7 ', (f.dir ? esc(f.dir) : DASH), '</div>',
     '<div class="ch">', (f.genres.length ? f.genres.map(g => '<span>' + esc(g) + '</span>').join('') : '<span class="unk">no genre data</span>'), '</div>',
     '<div class="rt">', (f.imdb != null ? '<span class="im">IMDb ' + f.imdb.toFixed(1) + '</span>' : '<span class="unk">IMDb &mdash;</span>'),
     '<span class="unk">RT &mdash;</span></div>',
     '<div class="you">',
-    (f.mine ? '<span class="ys">You ' + stars(f.mine) + '</span>' : (f.status === 'seen' ? '<span class="nu">Watched, not rated</span>' : '<span class="nu">Not seen</span>')),
+    (f.mine ? '<span class="ys">You ' + stars(f.mine) + '</span>' : (f.seen ? '<span class="nu">Watched, not rated</span>' : '<span class="nu">Not seen</span>')),
     (f.fr ? '<span class="fs">' + esc(f.fr.who) + ' ' + stars(f.fr.r) + '</span>' : '<span class="nf">No friend rating</span>'),
     '</div></div></article>'
   ].join('');
 
-  const counts = { seen: watched.length, towatch: wl.length, discover: unseenTop.length, directors: dirRows.length };
-  const resolvedSeen = rows.filter(r => r.status === 'seen' && r.resolved).length;
-
   const html = `<meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Movie-App Mockup v3</title>
+<title>Movie-App Mockup v4</title>
 <style>
-:root{--bg:#fbfaf9;--fg:#1a1a1a;--mut:#6b6b6b;--card:#fff;--bd:#e5e2df;--acc:#00A85A;--pur:#6b4cff;--info:#0a5a8a;--infobg:#e3f1fa}
-@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#141414;--fg:#ededed;--mut:#9a9a9a;--card:#1e1e1e;--bd:#333;--pur:#a48cff;--info:#7cc4ee;--infobg:#10293a}}
-:root[data-theme=dark]{--bg:#141414;--fg:#ededed;--mut:#9a9a9a;--card:#1e1e1e;--bd:#333;--pur:#a48cff;--info:#7cc4ee;--infobg:#10293a}
+:root{--bg:#fbfaf9;--fg:#1a1a1a;--mut:#6b6b6b;--card:#fff;--bd:#e5e2df;--acc:#00A85A;--pur:#6b4cff;--nv:#c2410c;--bong:#0369a1;--info:#0a5a8a;--infobg:#e3f1fa}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#141414;--fg:#ededed;--mut:#9a9a9a;--card:#1e1e1e;--bd:#333;--pur:#a48cff;--nv:#fb923c;--bong:#7dd3fc;--info:#7cc4ee;--infobg:#10293a}}
+:root[data-theme=dark]{--bg:#141414;--fg:#ededed;--mut:#9a9a9a;--card:#1e1e1e;--bd:#333;--pur:#a48cff;--nv:#fb923c;--bong:#7dd3fc;--info:#7cc4ee;--infobg:#10293a}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
 .w{max-width:1180px;margin:0 auto;padding:24px 20px 60px}
@@ -177,12 +210,12 @@ h1{font-size:22px;margin:0 0 4px}
 .sub{color:var(--mut);font-size:13px;margin-bottom:14px}
 .info{background:var(--infobg);color:var(--info);border:1px solid currentColor;border-radius:8px;padding:11px 14px;font-size:13px;margin-bottom:18px;line-height:1.55}
 .tabs{display:flex;gap:4px;margin-bottom:14px;border-bottom:1px solid var(--bd);flex-wrap:wrap}
-.tab{padding:9px 15px;border:0;background:none;color:var(--mut);font:inherit;font-weight:600;cursor:pointer;border-bottom:2px solid transparent}
+.tab{padding:9px 14px;border:0;background:none;color:var(--mut);font:inherit;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;font-size:13.5px}
 .tab.on{color:var(--fg);border-bottom-color:var(--acc)}
 .f{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;padding:12px 14px;background:var(--card);border:1px solid var(--bd);border-radius:10px;margin-bottom:16px}
 .f label{font-size:11.5px;color:var(--mut);display:flex;flex-direction:column;gap:3px}
 select,input[type=range]{font:inherit;font-size:13px;border:1px solid var(--bd);border-radius:6px;background:var(--bg);color:var(--fg)}
-select{padding:4px 6px;max-width:170px}
+select{padding:4px 6px;max-width:180px}
 input[type=range]{width:112px;padding:0;accent-color:var(--acc)}
 .chk{flex-direction:row!important;align-items:center;gap:5px;font-size:12.5px;color:var(--fg)}
 .dice{padding:9px 18px;border:0;border-radius:8px;background:var(--acc);color:#fff;font:inherit;font-weight:700;cursor:pointer;font-size:14px}
@@ -195,8 +228,10 @@ input[type=range]{width:112px;padding:0;accent-color:var(--acc)}
 .b{padding:9px 10px 11px;display:flex;flex-direction:column;gap:6px;flex:1}
 h3{font-size:13.5px;margin:0;line-height:1.3}
 .mt{font-size:11.5px;color:var(--mut)}
-.flag{font-size:10px;font-weight:700;color:var(--acc);letter-spacing:.03em;text-transform:uppercase}
-.dirflag{color:var(--pur);text-transform:none;font-size:10.5px}
+.flags{display:flex;flex-wrap:wrap;gap:4px}
+.fl{font-size:9.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;padding:1px 5px;border-radius:3px;border:1px solid currentColor}
+.fl.seen{color:var(--acc)}.fl.wl{color:var(--pur)}.fl.nv{color:var(--nv)}.fl.nvl{color:var(--nv);opacity:.65}
+.fl.bong{color:var(--bong)}.fl.top{color:var(--mut)}
 .ch{display:flex;gap:4px;flex-wrap:wrap}
 .ch span{font-size:10.5px;padding:1.5px 6px;border:1px solid var(--bd);border-radius:99px;color:var(--mut)}
 .rt{display:flex;gap:7px;font-size:11px}
@@ -221,19 +256,22 @@ h3{font-size:13.5px;margin:0;line-height:1.3}
 </style>
 <div class="w">
 <h1>Movie-App &mdash; browse, discover, shuffle</h1>
-<div class="sub">Mockup v3 &middot; every value is real or explicitly blank &mdash; nothing is invented</div>
-<div class="info"><strong>Real:</strong> title, year, runtime, genres, director and IMDb score come from IMDb's official datasets. Your ratings and posters come from your export and RSS feed.<br>
-<strong>Blank (&mdash;):</strong> Rotten Tomatoes everywhere &mdash; needs an OMDb key. Posters exist only for the ~50 films in the RSS window; the rest need TMDB.<br>
-<strong>Matched:</strong> ${resolvedSeen} of your ${watched.length} watched films resolved against IMDb; the rest show &mdash; because no confident title+year match exists.</div>
+<div class="sub">Mockup v4 &middot; ${counts.all.toLocaleString()} unique films &middot; every value is real or explicitly blank</div>
+<div class="info"><strong>All films</strong> is the whole database, deduplicated &mdash; a film appears once no matter how many collections it belongs to, with badges showing which.<br>
+<strong>Nouvelle Vague</strong> has no formal membership; the list used is the Cahiers du cinéma core plus the Left Bank group, defined in <code>data/collections.json</code> and editable. Films from ${NV_FROM}&ndash;${NV_TO} are badged as the movement's active period (${nvCore} of ${counts.nv}); later films by the same directors are kept so the database stays complete.<br>
+<strong>Blank (&mdash;):</strong> Rotten Tomatoes everywhere, and posters for all but the ~50 films in the RSS window. Both need API keys.</div>
 <div class="tabs">
-<button class="tab on" data-t="seen">Seen (${counts.seen})</button>
+<button class="tab on" data-t="all">All films (${counts.all})</button>
+<button class="tab" data-t="seen">Seen (${counts.seen})</button>
 <button class="tab" data-t="towatch">To Watch (${counts.towatch})</button>
-<button class="tab" data-t="discover">Discover &mdash; unseen top ${TOP_N} (${counts.discover})</button>
+<button class="tab" data-t="discover">Unseen top ${TOP_N} (${counts.discover})</button>
 <button class="tab" data-t="directors">Top-50 directors (${counts.directors})</button>
+<button class="tab" data-t="bong">Bong Joon Ho (${counts.bong})</button>
+<button class="tab" data-t="nv">Nouvelle Vague (${counts.nv})</button>
 </div>
 <div class="f">
 <label>Genre<select id="fg"><option value="">All</option>${allGen.map(g => '<option>' + esc(g) + '</option>').join('')}</select></label>
-<label>Director<select id="fd"><option value="">All</option>${DIRS.map(d => '<option>' + esc(d.name) + '</option>').join('')}</select></label>
+<label>Director<select id="fd"><option value="">All</option>${allDirs.map(d => '<option>' + esc(d) + '</option>').join('')}</select></label>
 <label>Min IMDb <span id="li">0.0</span><input type="range" id="fi" min="0" max="10" step="0.1" value="0"></label>
 <label>Max runtime <span id="lu">300m</span><input type="range" id="fu" min="60" max="300" step="5" value="300"></label>
 <label>Sort by<select id="fs"><option value="imdb">IMDb</option><option value="t">Title</option><option value="frv">Friend rating</option><option value="run">Runtime</option><option value="y">Year</option></select></label>
@@ -241,23 +279,23 @@ h3{font-size:13.5px;margin:0;line-height:1.3}
 <button class="dice" id="dice">&#127922; Pick one for me</button>
 <span class="cnt" id="cnt"></span>
 </div>
-<div class="g" id="g">${rows.map(card).join('')}</div>
+<div class="g" id="g">${all.map(card).join('')}</div>
 <div class="empty" id="e"><p><strong>Nothing matches these filters.</strong></p><p>Widen a slider, or clear the genre.</p></div>
 </div>
 <div class="ov" id="ov"><div class="pick" id="pick"></div></div>
 <script>
 var D = [].slice.call(document.querySelectorAll('.c')).map(function(el){
-  return {el:el, t:el.dataset.t, s:el.dataset.s, g:el.dataset.g, imdb:+el.dataset.imdb,
+  return {el:el, t:el.dataset.t, tabs:el.dataset.tabs.split('|'), g:el.dataset.g, imdb:+el.dataset.imdb,
     run:+el.dataset.run, y:+el.dataset.y, fr:+el.dataset.fr, frv:+el.dataset.frv, dir:el.dataset.dir};
 });
-var tab='seen', shown=[];
+var tab='all', shown=[];
 function $(i){return document.getElementById(i);}
 function apply(){
   var g=$('fg').value,d=$('fd').value,i=+$('fi').value,u=+$('fu').value,s=$('fs').value,o=$('fo').checked;
   $('li').textContent=i.toFixed(1); $('lu').textContent=u+'m';
   shown=[];
   D.forEach(function(f){
-    var ok = f.s===tab
+    var ok = f.tabs.indexOf(tab)>-1
       && (!g || f.g.split('|').indexOf(g)>-1)
       && (!d || f.dir.indexOf(d)>-1)
       && (i===0 || (f.imdb>=0 && f.imdb>=i))
@@ -282,8 +320,8 @@ function roll(){
     $('ov').classList.add('on'); return;
   }
   var f=shown[Math.floor(Math.random()*shown.length)];
-  var el=f.el, img=el.querySelector('img');
-  var gen=[].slice.call(el.querySelectorAll('.ch span')).map(function(x){return x.textContent;}).join(', ');
+  var img=f.el.querySelector('img');
+  var gen=[].slice.call(f.el.querySelectorAll('.ch span')).map(function(x){return x.textContent;}).join(', ');
   P.innerHTML='<h2>'+f.t+'</h2><div class="pm">'+(f.y||'\\u2014')+' \\u00b7 '+(f.run>=0?f.run+' min':'\\u2014')+' \\u00b7 '+(f.dir||'\\u2014')+'</div>'+
     '<div class="row"><div class="pp">'+(img?'<img src="'+img.src+'">':'')+'</div>'+
     '<div><p style="margin:0 0 8px">'+gen+'</p>'+
@@ -307,9 +345,8 @@ $('dice').addEventListener('click',roll);
 apply();
 </script>`;
 
-  fs.writeFileSync(OUT, html, 'utf8');
-  console.log('\npool(>=' + MIN_VOTES + ' votes):', topPool.length, '| top' + TOP_N + ' floor:', top[top.length - 1].r);
-  console.log('tabs -> seen:', counts.seen, 'towatch:', counts.towatch, 'discover:', counts.discover, 'directors:', counts.directors);
-  console.log('seen films resolved against IMDb:', resolvedSeen, '/', watched.length);
-  console.log('total cards:', rows.length);
+  fs.writeFileSync(APP + 'mockup-browse.html', html, 'utf8');
+  console.log('\nunique films in store:', counts.all.toLocaleString(), '| unresolved letterboxd rows:', unresolved);
+  console.log('tabs:', JSON.stringify(counts));
+  console.log('nouvelle vague core period (' + NV_FROM + '-' + NV_TO + '):', nvCore, 'of', counts.nv);
 })();

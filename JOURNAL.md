@@ -34,10 +34,45 @@ Decisions that would be expensive or dangerous to get wrong on a rebuild.
 | 7 | **Never render a metadata value we did not source** — unknown means an explicit dash | Fabricated placeholder data is indistinguishable from a bug, and cost a full review cycle to unpick | 2026-08-19 #3 |
 | 8 | Use `>>>` (unsigned) for any shift on a 32-bit hash | A signed `>>` goes negative above 2^31, yielding `undefined` array lookups on roughly 40% of inputs | 2026-08-19 #3 |
 | 9 | Directors come from `title.crew` + `name.basics`, not an API | Free, offline, and covers 674,368 credited movies | 2026-08-19 #3 |
+| 10 | **One film store keyed by `tconst`; tabs are views over it, never their own lists** | Per-tab lists silently duplicate any film belonging to two collections | 2026-08-19 #4 |
+| 11 | Collection membership lives in `data/collections.json`, not in code | Which films count as "Nouvelle Vague" is an editorial judgement and must stay visible and arguable | 2026-08-19 #4 |
+| 12 | Resolve every person by lookup in `name.basics`, disambiguated on profession and birth year | Name collisions are common and attach an entirely wrong filmography without erroring | 2026-08-19 #4 |
 
 ---
 
 ## Entries
+
+### 2026-08-19 #4 — Collections (Bong Joon Ho, Nouvelle Vague) and the All-films view
+
+**Branch:** n/a (planning) · **Status:** mockup v4 built
+
+**What changed**
+- **Store restructured.** Previously each tab built its own row list, so a film in two collections was emitted twice. Now there is a single `films` Map keyed by `tconst`, and tabs are *views* over it. Verified: 2,060 cards, **0 duplicate title+year pairs**.
+- **All films** tab — the whole database, deduplicated, with badges showing which collections each film belongs to.
+- **Bong Joon Ho** — 12 features.
+- **Nouvelle Vague** — 341 films by 15 directors, 147 inside the 1958–1973 core period.
+- Collections moved into `data/collections.json`, editable without touching build code.
+
+**Why**
+- The All view only means anything if a film appears exactly once. That forced the dedup fix, which was a latent bug the tab-scoped lists had been hiding.
+- Collection membership is editorial, so it belongs in data, not in code.
+
+**Rejected**
+- **Restricting Nouvelle Vague to the 1958–1973 window.** Would have dropped later Godard, Varda and Malle from the database entirely, contradicting "all the movies". Instead everything by those directors is included and the core period is a badge.
+- **Inferring the movement from IMDb genres or keywords.** There is no movement field; genre/country/year heuristics pull in unrelated French cinema and miss the Left Bank documentaries. A named director list is the only defensible definition.
+- **Guessing director IDs from memory.** Looked every one up in `name.basics` instead — which surfaced three decoy records (an actor named Alexandre Astruc, a camera operator named Claude Chabrol, another Chris Marker). Picking by name alone would have silently attached the wrong filmography.
+
+**Gotchas discovered**
+- **IMDb spells it "Bong Joon Ho", not "Bong Joon-ho".** The hyphenated form matches nothing. Any name lookup against `name.basics` needs the exact IMDb spelling, so look names up and confirm against birth year and profession rather than trusting a remembered form.
+- **Common names collide in `name.basics`.** Three of the sixteen directors searched returned a second person with the same name and no directing credits. Always disambiguate on `primaryProfession` plus `birthYear`.
+- **"Nouvelle Vague" is a critical label, not a fact.** No dataset encodes it, so membership is a stated editorial choice. It is written down in `data/collections.json` with its rationale so the boundary is visible and arguable rather than hidden in code.
+
+**Files touched**
+- `data/collections.json` — new: Bong Joon Ho and the 15 Nouvelle Vague directors, with the period definition and its reasoning
+- `scripts/build-mockup.js` — rewritten around one deduplicated store; tabs became views
+- `mockup-browse.html` — v4, seven tabs, 2,060 unique films
+
+---
 
 ### 2026-08-19 #3 — Top 1000, top-50 directors, and three mockup bugs fixed
 

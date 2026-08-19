@@ -1,0 +1,36 @@
+{
+  "_note": "Curated director groups. IMDb has no 'movement' field, so membership is a stated editorial choice, not sourced data. Edit freely — the build reads this file.",
+
+  "bong-joon-ho": {
+    "label": "Bong Joon Ho",
+    "kind": "director",
+    "note": "Every feature credited to him as director.",
+    "directors": [
+      {"id": "nm0094435", "name": "Bong Joon Ho"}
+    ]
+  },
+
+  "nouvelle-vague": {
+    "label": "Nouvelle Vague",
+    "kind": "movement",
+    "corePeriod": [1958, 1973],
+    "note": "The French New Wave has no formal membership. This list takes the Cahiers du cinéma core plus the Left Bank group, which is the standard critical grouping. Films released 1958-1973 are flagged as the movement's active period; later films by the same directors are still included so the database is complete. Jean-Pierre Melville is a acknowledged precursor rather than a member and is already covered by the top-50 directors list.",
+    "directors": [
+      {"id": "nm0000419", "name": "Jean-Luc Godard",        "group": "Cahiers"},
+      {"id": "nm0000076", "name": "François Truffaut",      "group": "Cahiers"},
+      {"id": "nm0001031", "name": "Claude Chabrol",         "group": "Cahiers"},
+      {"id": "nm0006445", "name": "Éric Rohmer",            "group": "Cahiers"},
+      {"id": "nm0729626", "name": "Jacques Rivette",        "group": "Cahiers"},
+      {"id": "nm0889513", "name": "Agnès Varda",            "group": "Left Bank"},
+      {"id": "nm0720297", "name": "Alain Resnais",          "group": "Left Bank"},
+      {"id": "nm0003408", "name": "Chris Marker",           "group": "Left Bank"},
+      {"id": "nm0218840", "name": "Jacques Demy",           "group": "Left Bank"},
+      {"id": "nm0001501", "name": "Louis Malle",            "group": "Associated"},
+      {"id": "nm0747613", "name": "Jacques Rozier",         "group": "Associated"},
+      {"id": "nm0262402", "name": "Jean Eustache",          "group": "Associated"},
+      {"id": "nm0040150", "name": "Alexandre Astruc",       "group": "Associated"},
+      {"id": "nm0440924", "name": "Pierre Kast",            "group": "Associated"},
+      {"id": "nm0232540", "name": "Jacques Doniol-Valcroze","group": "Associated"}
+    ]
+  }
+}

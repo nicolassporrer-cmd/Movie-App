@@ -46,6 +46,43 @@ Decisions that would be expensive or dangerous to get wrong on a rebuild.
 
 ## Entries
 
+### 2026-08-19 #9 — Shipped: Vite + React app live on GitHub Pages
+
+**Branch:** `main` · **Status:** deployed and verified at https://nicolassporrer-cmd.github.io/Movie-App/
+
+**What changed**
+- Replaced the generated mockup with a real React app: tabs, search, six filters, six sorts, shuffle, removal with undo.
+- `scripts/build-data.cjs` emits `public/data/films.json` — 2,253 films, 536 KB (~150 KB gzipped).
+- PWA manifest and PNG icons, so Add to Home Screen gives a real icon and a fullscreen launch.
+- GitHub Actions builds and deploys on push. Live ~30 seconds after the first push.
+- `CLAUDE.md` filled in: real stack, data model, deploy path, refresh commands.
+
+**Why**
+- Incremental rendering (90 cards per batch via `IntersectionObserver`) because 2,253 cards at once is slow on a phone.
+- The deploy workflow asserts `dist/data/films.json` is non-empty, so a broken pipeline fails the build instead of publishing an empty app.
+
+**Rejected**
+- **Generating the dataset inside CI.** It needs ~500 MB of IMDb downloads per run; committing the JSON keeps deploys fast and reviewable, and the data changes far less often than the code.
+- **A virtualised list library.** Batched rendering with an observer is a few lines and no dependency.
+- **Keeping the mockup HTML alongside the app.** Two things claiming to be the product is exactly how the stale-copy confusion started.
+
+**Gotchas discovered**
+- **`"type": "module"` breaks every CommonJS script in the repo.** Vite requires it in `package.json`; the moment it was added, all five pipeline scripts died with *"require is not defined in ES module scope"*. Renamed to `.cjs`. Anything new in `scripts/` must use that extension.
+- **A film missing an OMDb score is not necessarily a bug.** *The Godfather* and *The Dark Knight* showed `RT —` at the top of the list, which looked like a data fault. They are films Nicolas has **seen**, so `--unseen-first` correctly deprioritised them past 1,890 unseen films. Verified against `watched.csv` before assuming a defect.
+- **Vite's `base` must match the Pages project path.** A project site serves from `/Movie-App/`, so `base: '/Movie-App/'` and `import.meta.env.BASE_URL` for the fetch. Without it every asset 404s on a site that looks correctly built.
+
+**Verification**
+Against the live host, not the dev server: all assets HTTP 200, no console errors, 0 broken posters, tab counts correct, search "hitchcock" 56, RT ≥ 95 gives 239, shuffle respects filters, removal persists and undo clears it. At 375×812: no horizontal scroll, 2 cards per row, nothing overflowing.
+
+**Files touched**
+- `src/*`, `index.html`, `vite.config.js`, `package.json` — the app
+- `scripts/build-data.cjs`, `scripts/make-icons.cjs` — new
+- `.github/workflows/deploy.yml` — new
+- `CLAUDE.md` — filled in from the template
+- `mockup-browse.html`, `movie-app-v6.html` — deleted, superseded
+
+---
+
 ### 2026-08-19 #8 — Director list reshaped: 5 removed, 12 added
 
 **Branch:** n/a · **Status:** database updated, verified

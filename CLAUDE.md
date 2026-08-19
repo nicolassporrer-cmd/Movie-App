@@ -1,21 +1,25 @@
-# [Your App Name] — Project Context
+# Movie-App — Project Context
 
 ## What this is
-[One sentence: what this app does and who it's for.]
+A personal film browser: what Nicolas has watched and rated on Letterboxd, plus a curated catalogue of films he has not seen — filterable by genre, IMDb and Rotten Tomatoes score, runtime, director and year, with a shuffle button for when nothing appeals.
 
 Built on:
-- **[Data layer]** — e.g., Google Sheets (Sheet ID: `...`) / PostgreSQL / Airtable
-- **[Middleware]** — e.g., Google Apps Script / FastAPI / Supabase Edge Functions
-- **[Frontend]** — e.g., React 18 + Tailwind CSS (CDN, no build step) / Next.js / Streamlit
+- **Data layer** — static JSON generated at build time. No database, no server, no API at runtime.
+- **Pipeline** — Node scripts over IMDb's official datasets, the Letterboxd CSV export, friend RSS feeds, and an OMDb response cache
+- **Frontend** — React 18 + Vite, plain CSS, no UI framework
+- **Hosting** — GitHub Pages, deployed by GitHub Actions on push to `main`
 
-**Deployment URL:** [URL here, or "n/a — local only"]
+**Deployment URL:** https://nicolassporrer-cmd.github.io/Movie-App/
+
+**Library:** 2,253 films. Letterboxd account `nico_spo` — 170 watched, 37 on the watchlist.
 
 ---
 
-## Working with [Name]
+## Working with Nicolas
 
-- Keep responses concise — no verbose summaries or narration of what you just did
-- [Add any time/priority preferences, e.g., "Sessions are often time-pressured — be efficient"]
+- Keep responses concise — no verbose narration of what was just done
+- **Verify claims against real data before reporting them.** Several past errors — fabricated metadata, wrong directors, silently empty persistence — looked perfect in the UI and were only caught by asserting on actual values and reloading.
+- **Never render a value that was not sourced.** Unknown means an explicit dash, never a plausible-looking placeholder.
 - QA checklists after deploying must be **numbered prescriptive steps organized by Part** (Part 1: Feature works, Part 2: Data layer, Part 3: Edge cases, Part 4: Regressions) — never bullet circles
 
 ---
@@ -33,7 +37,18 @@ Built on:
 | `.claude/commands/sync.md` | `/sync` slash command |
 | `.claude/commands/improve-prompt.md` | `/improve-prompt` slash command |
 | `plans/` | Agreed design per feature — tracked, part of the rebuild spec |
-| [Add your app files here] | |
+| `src/App.jsx` | State, filtering, sorting, removal, incremental rendering |
+| `src/constants.js` | Tabs, sorts, tunables, `inTab()` — the single definition of tab membership |
+| `src/FilmCard.jsx` `src/Filters.jsx` `src/ShufflePanel.jsx` | Components (module level — never nested in a render) |
+| `src/styles.css` | All styling; theme tokens at the top |
+| `scripts/build-data.cjs` | Builds `public/data/films.json` from every source |
+| `scripts/enrich-omdb.cjs` | Fetches RT / Metacritic / posters. `--probe`, `--dry-run`, `--limit`, `--unseen-first` |
+| `scripts/make-icons.cjs` | Generates the PWA PNGs and manifest, no image dependency |
+| `scripts/serve.cjs` | Local static server for checking a build |
+| `data/*.json` | Curation and caches — see Data layer |
+| `.github/workflows/deploy.yml` | Build and publish to Pages on push to `main` |
+
+**Scripts are `.cjs`, not `.js`** — `package.json` needs `"type": "module"` for Vite, which breaks `require` in any `.js` file.
 
 ---
 
@@ -83,34 +98,64 @@ Built on:
 
 ## Deployment
 
-[Describe your deploy command and what it does.]
+Deployment is automatic: **push to `main` and `.github/workflows/deploy.yml` builds and publishes to GitHub Pages.** Typically live in about 30 seconds. There is no manual deploy step.
 
+The workflow runs `npm ci`, `npm run build`, then asserts `dist/data/films.json` is non-empty and fails loudly rather than shipping an empty app.
+
+After deploying, tell Nicolas to hard-refresh (Ctrl+Shift+R, or pull-to-refresh on the phone) — the hashed asset filenames change but `index.html` can be cached.
+
+**One-time setup already done:** Pages source is set to *GitHub Actions* in repo settings.
+
+### Refreshing the data
+
+Node is installed but **not on PATH for spawned shells** — use the absolute path or export it first.
+
+```bash
+export PATH="/c/Program Files/nodejs:$PATH"
+cd /c/dev/Movie-App
+node scripts/enrich-omdb.cjs --limit 900     # OMDb free tier is 1000/day
+npm run data                                  # regenerate public/data/films.json
+git add -A && git commit -m "Refresh film data" && git push
 ```
-[deploy command here]
-```
-
-After deploying: tell the user what to do (e.g., "Hit Ctrl+Shift+R to see changes.") and share a numbered QA checklist covering the changed behavior.
-
-**What deploy does:**
-1. [Step 1 — e.g., Copy dashboard.html → apps-script/index.html]
-2. [Step 2 — e.g., clasp push --force]
-3. [Step 3 — e.g., clasp deploy --deploymentId ...]
 
 ---
 
 ## Data layer
 
-[Describe your data schema: tables, tabs, key columns. This section is specific to your app and is the main thing to fill in.]
+Everything is one generated file: **`public/data/films.json`** (~536 KB, ~150 KB gzipped), built by `scripts/build-data.cjs`.
+
+**Sources**
+
+| Source | Provides | Notes |
+|---|---|---|
+| `title.basics.tsv.gz` | title, year, runtime, genres | 226 MB — must be **streamed**, never read into memory |
+| `title.ratings.tsv.gz` | IMDb score, vote count | includes TV; filter `titleType === 'movie'` |
+| `title.crew.tsv.gz` | director ids | |
+| `name.basics.tsv.gz` | director names | |
+| Letterboxd CSV export | watched, ratings, watchlist | no TMDB id, only a `boxd.it` URI |
+| Letterboxd RSS | friend ratings, some posters | rolling ~50 entries, not history |
+| `data/omdb-cache.json` | Rotten Tomatoes, Metacritic, poster URL | committed so a clone does not re-spend quota |
+
+**Film record** (keys are short to keep the payload small)
+
+| Key | Meaning | Key | Meaning |
+|---|---|---|---|
+| `k` | IMDb id, or `lb:<title>|<year>` if unresolved | `rt` | Rotten Tomatoes % |
+| `t` `y` `r` | title, year, runtime | `mc` | Metacritic |
+| `g` | genres array | `p` | poster URL |
+| `d` | director(s) | `s` `w` | seen / watchlist flags |
+| `i` `v` | IMDb score, votes | `m` | Nicolas's rating (0.5–5) |
+| `top` | in the IMDb top 1000 | `f` | friend rating `{w, r}` |
+| `dir` `bong` `nv` `nvc` | collection membership | | |
+
+**Curation files** — edit these, not the build script:
+`data/directors.json` (57 directors) · `data/collections.json` (Bong Joon Ho, Nouvelle Vague) · `data/excluded-directors.json`
 
 ---
 
 ## API
 
-[Describe your server-side functions or API endpoints. Recommended format:]
-
-| Action | Transport | Description |
-|--------|-----------|-------------|
-| [name] | GET / POST | [what it does] |
+**None.** The app is fully static — it fetches one JSON file and does everything client-side. There is no server, so there is nothing to write back to: user removals live in `localStorage` under `movieapp.excluded.v1` and are therefore **per-device**.
 
 ---
 

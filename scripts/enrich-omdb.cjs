@@ -1,15 +1,19 @@
-/* Enriches films with Rotten Tomatoes, Metacritic, IMDb and (if OMDb provides it)
-   a poster URL. Idempotent: results are cached per imdbId and never refetched.
+/* Fetches Rotten Tomatoes, Metacritic and poster URLs from OMDb.
+   Idempotent: cached per imdbId in data/omdb-cache.json and never refetched.
+
+   Key comes from OMDB_API_KEY in the environment (CI) or from .env (local).
+   Paths resolve from the repo root, so this runs anywhere.
 
    Usage:
-     node scripts/enrich-omdb.js --probe        one call, reports which fields OMDb returns
-     node scripts/enrich-omdb.js --dry-run      show what would be fetched, write nothing
-     node scripts/enrich-omdb.js --limit 900    fetch at most N (free tier is 1000/day)
-     node scripts/enrich-omdb.js --unseen-first prioritise films not yet watched
+     node scripts/enrich-omdb.cjs --probe          one call; reports which fields OMDb returns
+     node scripts/enrich-omdb.cjs --dry-run        show what would be fetched, write nothing
+     node scripts/enrich-omdb.cjs --limit 900      cap the run (free tier is 1000/day)
+     node scripts/enrich-omdb.cjs --unseen-first   prioritise films not yet watched
 */
-const fs = require('fs');
-const APP = 'C:/dev/Movie-App/';
-const CACHE = APP + 'data/omdb-cache.json';
+const fs = require('fs'), path = require('path');
+const ROOT = path.resolve(__dirname, '..');
+const CACHE = path.join(ROOT, 'data', 'omdb-cache.json');
+const FILMS = path.join(ROOT, 'public', 'data', 'films.json');
 
 const argv = process.argv.slice(2);
 const has = f => argv.includes(f);
@@ -18,27 +22,26 @@ const DRY = has('--dry-run'), PROBE = has('--probe');
 const LIMIT = parseInt(val('--limit', '900'), 10);
 const UNSEEN_FIRST = has('--unseen-first');
 
-function readEnv() {
-  if (!fs.existsSync(APP + '.env')) { console.error('No .env file at ' + APP + '.env'); process.exit(1); }
-  const out = {};
-  fs.readFileSync(APP + '.env', 'utf8').split(/\r?\n/).forEach(l => {
-    const m = /^\s*([A-Z0-9_]+)\s*=\s*(.*)$/.exec(l);
-    if (m) out[m[1]] = m[2].trim().replace(/^["']|["']$/g, '');
-  });
-  return out;
+function readKey() {
+  if (process.env.OMDB_API_KEY) return process.env.OMDB_API_KEY.trim();
+  const envPath = path.join(ROOT, '.env');
+  // .env has previously existed here as a DIRECTORY — check it is a file
+  if (!fs.existsSync(envPath) || !fs.statSync(envPath).isFile()) return null;
+  const m = /^\s*OMDB_API_KEY\s*=\s*(.*)$/m.exec(fs.readFileSync(envPath, 'utf8'));
+  return m ? m[1].trim().replace(/^["']|["']$/g, '') : null;
 }
 
-const env = readEnv();
-const KEY = env.OMDB_API_KEY;
+const KEY = readKey();
 if (!KEY) {
-  console.error('OMDB_API_KEY is empty in .env — paste the key after the = sign and rerun.');
+  console.error('No OMDb key. Set OMDB_API_KEY in the environment, or put it in a .env FILE at the repo root.');
   process.exit(1);
 }
 
-const films = JSON.parse(fs.readFileSync(APP + 'data/films.json', 'utf8'));
+const payload = JSON.parse(fs.readFileSync(FILMS, 'utf8'));
+const films = payload.films;
 const cache = fs.existsSync(CACHE) ? JSON.parse(fs.readFileSync(CACHE, 'utf8')) : {};
 
-const score = r => {
+const scores = r => {
   const out = { imdb: null, rt: null, meta: null };
   (r.Ratings || []).forEach(x => {
     if (x.Source === 'Internet Movie Database') out.imdb = parseFloat(x.Value);
@@ -58,61 +61,59 @@ async function fetchOne(id) {
 }
 
 (async () => {
-  const withId = films.filter(f => f.imdbId);
+  // 'lb:' keys are Letterboxd films that never resolved to an IMDb id
+  const withId = films.filter(f => f.k && !f.k.startsWith('lb:'));
   console.log('films with an IMDb id:', withId.length, '| already cached:', Object.keys(cache).length);
 
   if (PROBE) {
-    const sample = withId.find(f => f.title === 'The Shawshank Redemption') || withId[0];
-    console.log('probing with:', sample.title, '(' + sample.imdbId + ')\n');
-    try {
-      const j = await fetchOne(sample.imdbId);
-      const s = score(j);
-      console.log('  Title    :', j.Title, j.Year);
-      console.log('  Runtime  :', j.Runtime, '| Director:', j.Director);
-      console.log('  IMDb     :', s.imdb, '| Rotten Tomatoes:', s.rt, '| Metacritic:', s.meta);
-      console.log('  Poster   :', j.Poster && j.Poster !== 'N/A' ? j.Poster : '*** NOT PROVIDED ***');
-      console.log('\n  => posters via OMDb are', (j.Poster && j.Poster !== 'N/A') ? 'AVAILABLE — TMDB is not needed' : 'NOT available — TMDB required');
-    } catch (e) { console.error('  probe failed:', e.message); process.exit(1); }
+    const sample = withId[0];
+    console.log('probing with:', sample.t, '(' + sample.k + ')');
+    const j = await fetchOne(sample.k);
+    const s = scores(j);
+    console.log('  IMDb', s.imdb, '| RT', s.rt, '| Metacritic', s.meta);
+    console.log('  Poster:', j.Poster && j.Poster !== 'N/A' ? j.Poster : '*** NOT PROVIDED ***');
     return;
   }
 
-  let todo = withId.filter(f => !cache[f.imdbId]);
-  if (UNSEEN_FIRST) todo.sort((a, b) => (a.seen === b.seen) ? b.votes - a.votes : (a.seen ? 1 : -1));
-  else todo.sort((a, b) => b.votes - a.votes);
+  let todo = withId.filter(f => !cache[f.k]);
+  if (UNSEEN_FIRST) todo.sort((a, b) => (!!a.s === !!b.s) ? b.v - a.v : (a.s ? 1 : -1));
+  else todo.sort((a, b) => b.v - a.v);
   const batch = todo.slice(0, LIMIT);
 
-  console.log('to fetch:', todo.length, '| this run:', batch.length, DRY ? '(DRY RUN — nothing will be written)' : '');
+  console.log('to fetch:', todo.length, '| this run:', batch.length, DRY ? '(DRY RUN)' : '');
   if (DRY) {
-    batch.slice(0, 15).forEach((f, i) => console.log('  ' + (i + 1) + '. ' + f.title + ' (' + f.year + ')  ' + f.imdbId + (f.seen ? '  [seen]' : '')));
-    if (batch.length > 15) console.log('  ... and ' + (batch.length - 15) + ' more');
-    console.log('\nremaining after this run:', todo.length - batch.length);
+    batch.slice(0, 12).forEach((f, i) => console.log('  ' + (i + 1) + '. ' + f.t + ' (' + f.y + ')' + (f.s ? '  [seen]' : '')));
+    if (batch.length > 12) console.log('  ... and ' + (batch.length - 12) + ' more');
     return;
   }
+  if (!batch.length) { console.log('Nothing to do — every film is already cached.'); return; }
 
-  let ok = 0, fail = 0;
+  let ok = 0, fail = 0, quota = false;
   for (let i = 0; i < batch.length; i++) {
     const f = batch[i];
     try {
-      const j = await fetchOne(f.imdbId);
-      const s = score(j);
-      cache[f.imdbId] = {
+      const j = await fetchOne(f.k);
+      const s = scores(j);
+      cache[f.k] = {
         title: j.Title, year: j.Year, imdb: s.imdb, rt: s.rt, meta: s.meta,
-        poster: j.Poster && j.Poster !== 'N/A' ? j.Poster : null,
-        rated: j.Rated, country: j.Country, language: j.Language
+        poster: j.Poster && j.Poster !== 'N/A' ? j.Poster : null
       };
       ok++;
     } catch (e) {
-      cache[f.imdbId] = { error: e.message };
+      // A daily-quota rejection means stop — not "mark every remaining film broken",
+      // which would poison the cache and permanently skip those films.
+      if (/limit|quota/i.test(e.message)) { console.log('  quota reached after ' + i + ' — stopping'); quota = true; break; }
+      cache[f.k] = { error: e.message };
       fail++;
     }
     if ((i + 1) % 50 === 0) {
-      fs.writeFileSync(CACHE, JSON.stringify(cache), 'utf8');
+      fs.writeFileSync(CACHE, JSON.stringify(cache));
       console.log('  ' + (i + 1) + '/' + batch.length + '  ok:' + ok + ' fail:' + fail);
     }
   }
-  fs.writeFileSync(CACHE, JSON.stringify(cache), 'utf8');
+  fs.writeFileSync(CACHE, JSON.stringify(cache));
   const done = Object.values(cache);
-  console.log('\nfetched ok:', ok, '| failed:', fail);
-  console.log('cache now holds:', done.length, '| with RT:', done.filter(d => d.rt != null).length, '| with poster:', done.filter(d => d.poster).length);
-  console.log('remaining:', withId.filter(f => !cache[f.imdbId]).length);
+  console.log('\nfetched ok:', ok, '| failed:', fail, quota ? '| stopped on quota' : '');
+  console.log('cache holds:', done.length, '| with RT:', done.filter(d => d.rt != null).length, '| with poster:', done.filter(d => d.poster).length);
+  console.log('remaining:', withId.filter(f => !cache[f.k]).length);
 })();

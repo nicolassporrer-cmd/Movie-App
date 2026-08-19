@@ -14,7 +14,7 @@ Items ordered by priority. Status lifecycle: `unplanned` → `planned` → `in_p
 
 | # | Item | Notes |
 |---|------|-------|
-| 1 | Finish OMDb enrichment | 1,157 films remain, including most of the watched list. `node scripts/enrich-omdb.cjs --limit 900` then `npm run data`. Free tier is 1000/day. |
+| 1 | Finish OMDb enrichment | Automated: `.github/workflows/refresh-scores.yml` runs daily at 06:17 UTC. 1,386 films still without RT; clears in ~2 runs. Needs the `OMDB_API_KEY` repo secret. |
 
 ---
 
@@ -23,7 +23,7 @@ Items ordered by priority. Status lifecycle: `unplanned` → `planned` → `in_p
 | # | Item | Notes |
 |---|------|-------|
 | 2 | Cross-device sync for removals | Currently `localStorage`, so per-device. Options: commit an exclusions file (synced but read-only on device), or add a small backend. |
-| 3 | Weekly automated data refresh | GitHub Action re-pulling the IMDb datasets. Needs `OMDB_API_KEY` as a repo secret. Deferred until the manual path has run a few times. |
+| 3 | Automated catalogue refresh | Scores now refresh daily. The *catalogue* (new IMDb films, new Letterboxd exports) still needs a local `npm run data`, since it pulls ~500 MB of datasets. |
 | 4 | Friends' ratings | Parked. Needs CSV exports from Regelegorila and thiboudon; RSS alone covers 6 of 170 films. |
 | 5 | Manual override file for title matches | For films where title+year resolves to the wrong IMDb entry. The vote-weighted heuristic handles the general case. |
 | 6 | Private hosting | Only if the public URL becomes a concern — Pages sites are always public. |

@@ -55,11 +55,36 @@ jobs:
         if: steps.key.outputs.present == 'true'
         run: node scripts/apply-omdb.cjs
 
+      - name: Check for the TMDB key
+        id: tmdb
+        env:
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+        run: |
+          if [ -z "$TMDB_API_KEY" ]; then
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::TMDB_API_KEY is not set — skipping streaming availability."
+          else
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Streaming rights rotate, so provider data expires after 7 days. Running daily
+      # against that window refreshes roughly a seventh of the library each night
+      # instead of all 2,200 at once.
+      - name: Refresh streaming availability
+        if: steps.tmdb.outputs.present == 'true'
+        env:
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+        run: node scripts/enrich-tmdb.cjs --max-age-days 7
+
+      - name: Merge streaming availability into the dataset
+        if: steps.tmdb.outputs.present == 'true'
+        run: node scripts/apply-providers.cjs
+
       - name: Commit if anything changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet -- data/omdb-cache.json public/data/films.json; then
+          if git diff --quiet -- data/omdb-cache.json data/tmdb-ids.json data/providers-fr.json public/data/films.json; then
             echo "Nothing changed today."
             exit 0
           fi
@@ -68,6 +93,6 @@ jobs:
             const noRt=p.films.filter(f=>f.rt==null).length;
             console.log(p.counts.seen+' seen, '+p.counts.watchlist+' to watch, '+noRt+' still without RT');
           ")
-          git add data/omdb-cache.json public/data/films.json
+          git add data/omdb-cache.json data/tmdb-ids.json data/providers-fr.json public/data/films.json
           git commit -m "Daily refresh: $SUMMARY"
           git push

@@ -1,9 +1,13 @@
-import { RT_FRESH } from './constants.js';
+import { RT_FRESH, TMDB_WATCH_URL } from './constants.js';
 
 // Module level, never nested in another render — a nested component remounts on
 // every keystroke and destroys focus and state.
-export default function FilmCard({ film, removed, onRemove, onRestore }) {
+export default function FilmCard({ film, removed, onRemove, onRestore, providers, mine }) {
   const stars = v => v == null ? null : '★'.repeat(Math.floor(v)) + (v % 1 ? '½' : '');
+  const on = (film.pv || []).map(i => providers[i]).filter(Boolean);
+  // A service you pay for is the useful signal; the rest is context.
+  const subscribed = on.filter(n => mine.has(n));
+  const others = on.filter(n => !mine.has(n));
 
   return (
     <article className={'card' + (removed ? ' gone' : '')}>
@@ -58,6 +62,24 @@ export default function FilmCard({ film, removed, onRemove, onRestore }) {
           {film.f
             ? <span className="friend">{film.f.w} {stars(film.f.r)}</span>
             : <span className="none">No friend rating</span>}
+        </div>
+
+        <div className="watch">
+          {subscribed.length ? (
+            <span className="on-mine" title={'Included with ' + subscribed.join(', ')}>
+              ▶ {subscribed.join(', ')}
+            </span>
+          ) : others.length ? (
+            <span className="on-other" title={'Streaming on ' + others.join(', ')}>
+              {others.slice(0, 2).join(', ')}{others.length > 2 ? ' +' + (others.length - 2) : ''}
+            </span>
+          ) : film.tid ? (
+            <a className="where" href={TMDB_WATCH_URL(film.tid)} target="_blank" rel="noopener noreferrer">
+              Not streaming &middot; where to watch
+            </a>
+          ) : (
+            <span className="none">Streaming unknown</span>
+          )}
         </div>
       </div>
     </article>

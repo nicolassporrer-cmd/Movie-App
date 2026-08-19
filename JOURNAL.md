@@ -46,6 +46,43 @@ Decisions that would be expensive or dangerous to get wrong on a rebuild.
 
 ## Entries
 
+### 2026-08-19 #11 — Streaming availability: "what can I watch tonight"
+
+**Branch:** `main` · **Status:** shipped
+
+**What changed**
+- French streaming availability per film, from TMDB (data sourced from JustWatch).
+- An in-app **subscription picker** — 41 services, ordered by how many films each carries. Choices live in `localStorage`, so no code edit when a subscription changes.
+- Cards badge services **you pay for** in green; others are muted; films on nothing link out to a where-to-watch page.
+- New **On my services** filter, and the shuffle now says *"▶ Watch now on Canal+"*.
+- Attribution footer for IMDb, OMDb, JustWatch and TMDB.
+
+**Measured:** 2,205 of 2,254 films mapped to a TMDB id, 0 fetch errors. **885 films are on some subscription service, 770 of them unseen.** With Netflix + Disney+ + Canal+ selected: 325 films, or **205** when narrowed to the unseen top 1000.
+
+**Why**
+- Only `flatrate` (and `free`) is used. TMDB also returns rent and buy — *Shawshank* lists 13 rental options — which is noise, not information, when the question is "what can I watch on what I already pay for".
+- The subscription list is a UI preference, not data. Baking it into a config file would mean a code change every time he drops a service.
+
+**Rejected**
+- **The Streaming Availability API** (accepts IMDb ids directly, so no TMDB needed): free tier is **100 requests/day**. At 2,254 films a single pass takes 23 days — longer than the data stays valid. Unusable at this size.
+- **Scraping JustWatch** — against their terms, and fragile. Same answer as Google Images and the Letterboxd HTML.
+- **Storing the watch link per film** — ~70 chars × 2,254 ≈ 160 KB for something derivable from the TMDB id, which is a small integer.
+- **Storing provider names per film** — the same 41 names repeat thousands of times. Interned to a shared list and referenced by index.
+
+**Gotchas discovered**
+- **This is the first perishable data in the app, and it needs different plumbing.** IMDb runtimes and OMDb scores are correct forever, so those caches are permanent and never refetched. Streaming rights rotate constantly — a permanent cache would confidently show a film on Netflix months after it left. The provider cache therefore carries a timestamp per entry and expires after 7 days, and the UI states the date it was gathered. **The two caches are separate on purpose; do not merge them.**
+- **TMDB lists billing routes, not services.** The raw feed has "Netflix" and "Netflix Standard with Ads" as separate providers, three Paramount variants, and an "… Amazon Channel" twin for almost everything. A picker built from raw names would ask Nicolas to tick Netflix twice. Collapsed to canonical names, which took 51 entries down to 41.
+- **Careless regex mangled a brand.** Normalising `\s*\+\s*` to `+` turned "Cine+ OCS" into "Cine+OCS". Only strip spaces *before* the word "Plus"; leave an existing "+" alone.
+- **Running daily against a 7-day expiry spreads the load** — about a seventh of the library refreshes each night rather than 2,200 calls in one burst.
+
+**Files touched**
+- `scripts/enrich-tmdb.cjs`, `scripts/apply-providers.cjs` — new
+- `src/Subscriptions.jsx` — new
+- `src/App.jsx`, `src/FilmCard.jsx`, `src/Filters.jsx`, `src/ShufflePanel.jsx`, `src/constants.js`, `src/styles.css`
+- `.github/workflows/daily-refresh.yml` — provider refresh added, gated on the TMDB secret
+
+---
+
 ### 2026-08-19 #10 — Letterboxd auto-sync for watched films; three collection tabs removed
 
 **Branch:** `main` · **Status:** shipped

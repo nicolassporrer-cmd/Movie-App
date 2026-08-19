@@ -1,6 +1,6 @@
 import { SORTS, RUNTIME_MAX } from './constants.js';
 
-export default function Filters({ data, filters, setFilters, count, onShuffle }) {
+export default function Filters({ data, filters, setFilters, count, onShuffle, hasProviders }) {
   const set = (key, value) => setFilters(f => ({ ...f, [key]: value }));
 
   return (
@@ -56,6 +56,14 @@ export default function Filters({ data, filters, setFilters, count, onShuffle })
           onChange={e => set('friendOnly', e.target.checked)} />
         Friend-rated only
       </label>
+
+      {hasProviders ? (
+        <label className="check">
+          <input type="checkbox" checked={filters.streamingOnly}
+            onChange={e => set('streamingOnly', e.target.checked)} />
+          On my services
+        </label>
+      ) : null}
 
       <button className="dice" onClick={onShuffle}>🎲 Pick one for me</button>
       <span className="count">{count.toLocaleString()} {count === 1 ? 'film' : 'films'}</span>

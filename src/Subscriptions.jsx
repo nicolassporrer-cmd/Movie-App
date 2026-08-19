@@ -1,0 +1,38 @@
+/* Lets Nicolas declare which services he pays for. Stored in localStorage, so it is
+   per-device like the removals — but it is a preference rather than data, and takes
+   ten seconds to redo, so that is a fair trade for needing no backend. */
+export default function Subscriptions({ providers, counts, mine, onToggle, onClear, open, setOpen }) {
+  if (!providers.length) return null;
+
+  return (
+    <div className="subs">
+      <button className="subs-toggle" onClick={() => setOpen(!open)}>
+        {mine.size ? 'My services (' + mine.size + ')' : 'Pick my services'}
+        <span className="chev">{open ? '▲' : '▼'}</span>
+      </button>
+
+      {open ? (
+        <div className="subs-panel">
+          <p className="subs-help">
+            Tick what you subscribe to. Films on those services get a green badge, and
+            the <strong>On my services</strong> filter and the shuffle will use them.
+          </p>
+          <div className="subs-list">
+            {providers.map((name, i) => (
+              <label key={name} className={'chip' + (mine.has(name) ? ' on' : '')}>
+                <input
+                  type="checkbox"
+                  checked={mine.has(name)}
+                  onChange={() => onToggle(name)}
+                />
+                {name}
+                <span className="chip-count">{counts[i] || 0}</span>
+              </label>
+            ))}
+          </div>
+          {mine.size ? <button className="subs-clear" onClick={onClear}>Clear all</button> : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}

@@ -21,6 +21,10 @@ export const SORTS = [
 ];
 
 export const RUNTIME_MAX = 300;
+export const SUBS_KEY = 'movieapp.subscriptions.v1';
+export const REGION = 'FR';
+// TMDB does not expose deep links into the provider, only its own watch page.
+export const TMDB_WATCH_URL = tid => 'https://www.themoviedb.org/movie/' + tid + '/watch?locale=' + REGION;
 export const PAGE_SIZE = 90;          // cards rendered per batch; more load on scroll
 export const TOAST_MS = 6000;
 export const RT_FRESH = 60;           // at or above this an RT score reads as fresh
@@ -33,6 +37,7 @@ export const DEFAULT_FILTERS = {
   minRt: 0,
   maxRuntime: RUNTIME_MAX,
   friendOnly: false,
+  streamingOnly: false,
   query: '',
   sort: 'imdb'
 };

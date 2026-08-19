@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import FilmCard from './FilmCard.jsx';
 import Filters from './Filters.jsx';
 import ShufflePanel from './ShufflePanel.jsx';
-import { TABS, DEFAULT_FILTERS, PAGE_SIZE, TOAST_MS, STORE_KEY, RUNTIME_MAX, inTab } from './constants.js';
+import Subscriptions from './Subscriptions.jsx';
+import { TABS, DEFAULT_FILTERS, PAGE_SIZE, TOAST_MS, STORE_KEY, SUBS_KEY, RUNTIME_MAX, inTab } from './constants.js';
 
 /* Removal is an exclusion list, never a delete: the dataset is regenerated from
    the IMDb datasets, so a deleted row would reappear on the next build. */
@@ -14,6 +15,13 @@ function saveExcluded(set) {
   // Array.from, not [].slice.call — a Set has no length and slice would write []
   try { localStorage.setItem(STORE_KEY, JSON.stringify(Array.from(set))); } catch { /* private mode */ }
 }
+function loadSubs() {
+  try { return new Set(JSON.parse(localStorage.getItem(SUBS_KEY) || '[]')); }
+  catch { return new Set(); }
+}
+function saveSubs(set) {
+  try { localStorage.setItem(SUBS_KEY, JSON.stringify(Array.from(set))); } catch { /* private mode */ }
+}
 
 export default function App() {
   const [data, setData] = useState(null);
@@ -21,6 +29,8 @@ export default function App() {
   const [tab, setTab] = useState('all');
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [excluded, setExcluded] = useState(loadExcluded);
+  const [mine, setMine] = useState(loadSubs);
+  const [subsOpen, setSubsOpen] = useState(false);
   const [limit, setLimit] = useState(PAGE_SIZE);
   const [toast, setToast] = useState(null);
   const [shuffle, setShuffle] = useState(null);
@@ -88,6 +98,11 @@ export default function App() {
       if (filters.minRt > 0 && !(f.rt != null && f.rt >= filters.minRt)) return false;
       if (filters.maxRuntime < RUNTIME_MAX && !(f.r != null && f.r <= filters.maxRuntime)) return false;
       if (filters.friendOnly && !f.f) return false;
+      if (filters.streamingOnly) {
+        if (!f.pv || !f.pv.length) return false;
+        // With no subscriptions declared, "streaming" means any service rather than none
+        if (mine.size && !f.pv.some(i => mine.has(data.providers[i]))) return false;
+      }
       if (q && !(f.t.toLowerCase().includes(q) || (f.da || f.d || '').toLowerCase().includes(q))) return false;
       return true;
     });
@@ -100,7 +115,23 @@ export default function App() {
       title: (a, b) => a.t.localeCompare(b.t)
     };
     return rows.sort(by[filters.sort] || by.imdb);
-  }, [data, tab, filters, excluded]);
+  }, [data, tab, filters, excluded, mine]);
+
+  const providerCounts = useMemo(() => {
+    if (!data || !data.providers) return {};
+    const out = {};
+    data.films.forEach(f => (f.pv || []).forEach(i => { out[i] = (out[i] || 0) + 1; }));
+    return out;
+  }, [data]);
+
+  const toggleSub = useCallback(name => {
+    setMine(prev => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name); else next.add(name);
+      saveSubs(next);
+      return next;
+    });
+  }, []);
 
   useEffect(() => { setLimit(PAGE_SIZE); }, [tab, filters]);
 
@@ -149,7 +180,17 @@ export default function App() {
       </nav>
 
       <Filters data={data} filters={filters} setFilters={setFilters}
-        count={visible.length} onShuffle={roll} />
+        count={visible.length} onShuffle={roll} hasProviders={!!(data.providers || []).length} />
+
+      <Subscriptions
+        providers={data.providers || []}
+        counts={providerCounts}
+        mine={mine}
+        onToggle={toggleSub}
+        onClear={() => { setMine(new Set()); saveSubs(new Set()); }}
+        open={subsOpen}
+        setOpen={setSubsOpen}
+      />
 
       {visible.length === 0 ? (
         <p className="empty">
@@ -161,7 +202,8 @@ export default function App() {
           <div className="grid">
             {visible.slice(0, limit).map(f => (
               <FilmCard key={f.k} film={f} removed={excluded.has(f.k)}
-                onRemove={remove} onRestore={restore} />
+                onRemove={remove} onRestore={restore}
+                providers={data.providers || []} mine={mine} />
             ))}
           </div>
           <div ref={sentinel} className="sentinel">
@@ -179,8 +221,17 @@ export default function App() {
 
       {shuffle ? (
         <ShufflePanel pick={shuffle.pick} total={visible.length}
-          onRoll={roll} onClose={() => setShuffle(null)} />
+          onRoll={roll} onClose={() => setShuffle(null)}
+          providers={data.providers || []} mine={mine} />
       ) : null}
+
+      {/* Required attribution for the TMDB and OMDb data */}
+      <footer className="credits">
+        Film data from <a href="https://www.imdb.com/interfaces/" target="_blank" rel="noopener noreferrer">IMDb&rsquo;s public datasets</a>.
+        Ratings and posters via <a href="https://www.omdbapi.com/" target="_blank" rel="noopener noreferrer">OMDb</a>.
+        Streaming availability{data.providersAt ? ' (as of ' + data.providersAt + ')' : ''} via JustWatch,
+        served through the TMDB API. This product uses the TMDB API but is not endorsed or certified by TMDB.
+      </footer>
     </div>
   );
 }

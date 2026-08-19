@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { RT_FRESH } from './constants.js';
 
-export default function ShufflePanel({ pick, total, onRoll, onClose }) {
+export default function ShufflePanel({ pick, total, onRoll, onClose, providers = [], mine = new Set() }) {
   useEffect(() => {
     const onKey = e => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', onKey);
@@ -35,6 +35,13 @@ export default function ShufflePanel({ pick, total, onRoll, onClose }) {
                     ? <span className={pick.rt >= RT_FRESH ? 'fresh' : 'rotten'}> · RT {pick.rt}%</span>
                     : null}
                 </p>
+                {(() => {
+                  const on = (pick.pv || []).map(i => providers[i]).filter(Boolean);
+                  const subscribed = on.filter(n => mine.has(n));
+                  if (subscribed.length) return <p className="panel-watch on-mine">▶ Watch now on {subscribed.join(', ')}</p>;
+                  if (on.length) return <p className="panel-watch on-other">Streaming on {on.join(', ')}</p>;
+                  return <p className="panel-watch on-other">Not on any subscription service</p>;
+                })()}
                 <p className="panel-note">
                   Picked from the {total.toLocaleString()} films matching your current filters.
                 </p>

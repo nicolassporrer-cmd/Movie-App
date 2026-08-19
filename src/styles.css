@@ -133,6 +133,48 @@ input[type="range"] { width: 118px; accent-color: var(--acc); }
 .friend { color: var(--pur); font-weight: 600; }
 .none { color: var(--mut); opacity: .55; }
 
+/* Where to watch */
+.watch { font-size: 11px; margin-top: 3px; line-height: 1.35; }
+.on-mine {
+  color: var(--acc); font-weight: 700; display: inline-block;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%;
+}
+.on-other { color: var(--mut); }
+.where { color: var(--mut); text-decoration: none; border-bottom: 1px dotted currentColor; opacity: .75; }
+.where:hover { color: var(--fg); }
+
+/* Subscription picker */
+.subs { margin: -6px 0 14px; }
+.subs-toggle {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 7px 13px; border: 1px solid var(--bd); border-radius: 8px;
+  background: var(--card); color: var(--fg); font: inherit; font-size: 13px;
+  font-weight: 600; cursor: pointer;
+}
+.chev { font-size: 9px; opacity: .6; }
+.subs-panel {
+  margin-top: 9px; padding: 13px 14px;
+  background: var(--card); border: 1px solid var(--bd); border-radius: 10px;
+}
+.subs-help { margin: 0 0 10px; font-size: 12.5px; color: var(--mut); line-height: 1.5; }
+.subs-list { display: flex; flex-wrap: wrap; gap: 7px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 11px; border: 1px solid var(--bd); border-radius: 99px;
+  font-size: 12.5px; cursor: pointer; user-select: none; color: var(--mut);
+}
+.chip:hover { border-color: var(--mut); }
+.chip.on { border-color: var(--acc); color: var(--acc); font-weight: 600; }
+.chip input { margin: 0; accent-color: var(--acc); }
+.chip-count { opacity: .55; font-size: 11px; font-weight: 400; }
+.subs-clear {
+  margin-top: 11px; padding: 5px 11px; border: 1px solid var(--bd); border-radius: 7px;
+  background: none; color: var(--mut); font: inherit; font-size: 12px; cursor: pointer;
+}
+
+.credits { margin-top: 34px; padding-top: 14px; border-top: 1px solid var(--bd); font-size: 11.5px; color: var(--mut); line-height: 1.6; }
+.credits a { color: inherit; }
+
 .sentinel { text-align: center; color: var(--mut); font-size: 13px; padding: 22px 0; }
 
 .toast {
@@ -153,6 +195,7 @@ input[type="range"] { width: 118px; accent-color: var(--acc); }
 .panel-poster img { width: 100%; height: 100%; object-fit: cover; }
 .panel-genres { margin: 0 0 8px; font-size: 13px; color: var(--mut); }
 .panel-scores { margin: 0; font-size: 14px; }
+.panel-watch { margin: 9px 0 0; font-size: 13.5px; font-weight: 600; }
 .panel-note { margin: 8px 0 0; font-size: 12.5px; opacity: .7; }
 .actions { display: flex; gap: 8px; margin-top: 15px; }
 .panel button { padding: 9px 16px; border-radius: 8px; border: 1px solid var(--bd); background: var(--bg); color: var(--fg); font: inherit; font-weight: 600; cursor: pointer; }

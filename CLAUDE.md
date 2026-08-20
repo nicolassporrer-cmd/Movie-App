@@ -20,6 +20,7 @@ Built on:
 - Keep responses concise — no verbose narration of what was just done
 - **Verify claims against real data before reporting them.** Several past errors — fabricated metadata, wrong directors, silently empty persistence — looked perfect in the UI and were only caught by asserting on actual values and reloading.
 - **Never render a value that was not sourced.** Unknown means an explicit dash, never a plausible-looking placeholder.
+- **When asked to add a single film, add its director's whole filmography.** Nicolas confirmed this as a standing preference on 2026-08-20. Add the director to `data/directors.json` rather than special-casing one title, then rebuild. It keeps the catalogue coherent, matches how every other collection works, and usually turns up films he would have asked for next. Enrich the new titles immediately with `node scripts/enrich-omdb.cjs --only <tconst,...>` rather than leaving them blank until the nightly batch reaches them.
 - QA checklists after deploying must be **numbered prescriptive steps organized by Part** (Part 1: Feature works, Part 2: Data layer, Part 3: Edge cases, Part 4: Regressions) — never bullet circles
 
 ---

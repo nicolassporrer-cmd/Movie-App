@@ -133,6 +133,10 @@ function rss(u) {
 
   const needed = new Set();
   films.forEach(f => f.dIds.forEach(n => needed.add(n)));
+  // Also resolve every configured director, so the dropdown can use IMDb's own
+  // spelling rather than whatever was typed into the config files.
+  [...DIRLIST, ...COLL['bong-joon-ho'].directors, ...COLL['nouvelle-vague'].directors]
+    .forEach(d => needed.add(d.id));
   const nameOf = new Map();
   await new Promise(res => {
     const rl = stream('names.tsv.gz');
@@ -160,11 +164,19 @@ function rss(u) {
 
   const all = [...films.values()].sort((a, b) => (b.i || 0) - (a.i || 0) || b.v - a.v);
   const genres = [...new Set(all.flatMap(f => f.g))].sort();
-  const directors = [...new Set([
-    ...DIRLIST.map(d => d.name),
-    ...COLL['bong-joon-ho'].directors.map(d => d.name),
-    ...COLL['nouvelle-vague'].directors.map(d => d.name)
-  ])].sort();
+  /* Names come from IMDb, never from the config files. Hand-typed names drift from
+     the data — "Alejandro G. Inarritu" in directors.json never matched
+     "Alejandro G. Iñárritu" in the films, so his 11 titles were unreachable from the
+     dropdown despite being present. Same for Kieślowski, Cuarón and Forman. */
+  const configured = [...DIRLIST, ...COLL['bong-joon-ho'].directors, ...COLL['nouvelle-vague'].directors];
+  const mismatches = configured.filter(d => nameOf.get(d.id) && nameOf.get(d.id) !== d.name);
+  const directors = [...new Set(configured.map(d => nameOf.get(d.id) || d.name))].sort();
+  if (mismatches.length) {
+    console.log('config names corrected from IMDb (' + mismatches.length + '):');
+    mismatches.forEach(d => console.log('  "' + d.name + '"  ->  "' + nameOf.get(d.id) + '"'));
+  }
+  const unresolvedDirs = configured.filter(d => !nameOf.get(d.id));
+  if (unresolvedDirs.length) console.warn('WARNING: director ids that resolved to no name:', unresolvedDirs.map(d => d.name + '/' + d.id).join(', '));
 
   const d = new Date();
   const pad = n => String(n).padStart(2, '0');

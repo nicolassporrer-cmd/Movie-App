@@ -46,10 +46,28 @@ export default function App() {
         // Seed the known subscriptions on a device that has never been set up.
         // Guarded on the key being absent entirely, not empty — clearing every
         // service is a deliberate choice and must not be undone on reload.
-        if (localStorage.getItem(SUBS_KEY) === null && (d.defaultSubs || []).length) {
+        const raw = localStorage.getItem(SUBS_KEY);
+        if (raw === null && (d.defaultSubs || []).length) {
           const seeded = new Set(d.defaultSubs);
           setMine(seeded);
           saveSubs(seeded);
+          return;
+        }
+        /* A saved selection can outlive the service list it was made from. The
+           app was on French data first, so a device may still hold "Molotov TV"
+           or "SFR Play" — names that no longer exist — while Peacock, added
+           later, was never ticked. Drop names that are gone, and if that empties
+           the set, fall back to the known subscriptions rather than silently
+           showing everything as unavailable. */
+        if (raw !== null && (d.providers || []).length) {
+          const known = new Set(d.providers);
+          const stored = (() => { try { return JSON.parse(raw); } catch { return []; } })();
+          const kept = stored.filter(n => known.has(n));
+          if (kept.length !== stored.length) {
+            const next = new Set(kept.length ? kept : (d.defaultSubs || []));
+            setMine(next);
+            saveSubs(next);
+          }
         }
       })
       .catch(e => setError(e.message));

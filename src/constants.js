@@ -21,7 +21,13 @@ export const SORTS = [
 ];
 
 export const RUNTIME_MAX = 300;
-export const SUBS_KEY = 'movieapp.subscriptions.v1';
+/* Bumped to v2 on 2026-08-20. A v1 selection was made when the app ran on French
+   data, so it could not contain Peacock or Amazon Prime — leaving 40 Peacock films
+   rendering grey on a device that had simply been set up too early. Pruning stale
+   names was not enough: a partly-valid set like ["Netflix"] survived and stayed
+   wrong. Bumping the key re-seeds the confirmed subscriptions once; unticking a
+   service afterwards is respected as before. */
+export const SUBS_KEY = 'movieapp.subscriptions.v2';
 export const REGION = 'FR';
 // TMDB does not expose deep links into the provider, only its own watch page.
 export const TMDB_WATCH_URL = tid => 'https://www.themoviedb.org/movie/' + tid + '/watch?locale=' + REGION;

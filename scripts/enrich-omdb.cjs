@@ -75,7 +75,15 @@ async function fetchOne(id) {
     return;
   }
 
+  // --only lets a newly added film be enriched immediately, instead of waiting for
+  // the nightly batch to reach it by vote count.
+  const only = val('--only', null);
   let todo = withId.filter(f => !cache[f.k]);
+  if (only) {
+    const wanted = new Set(only.split(',').map(s => s.trim()));
+    todo = withId.filter(f => wanted.has(f.k));
+    console.log('--only: targeting ' + todo.length + ' of ' + wanted.size + ' requested');
+  }
   if (UNSEEN_FIRST) todo.sort((a, b) => (!!a.s === !!b.s) ? b.v - a.v : (a.s ? 1 : -1));
   else todo.sort((a, b) => b.v - a.v);
   const batch = todo.slice(0, LIMIT);

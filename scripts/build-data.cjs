@@ -87,6 +87,20 @@ function rss(u) {
 
   const films = new Map();
   const excluded = id => (crew.get(id) || []).some(d => exclIds.has(d));
+
+  /* IMDb lists announced projects as `movie` titles — "Untitled Taika Waititi Star
+     Wars Film", four Beatles biopics dated 2028, Avatar 4 (2029). They have no year
+     or no rating because they do not exist yet, so they clutter the catalogue with
+     rows nobody can watch. Skip anything unrated that is dated this year or later,
+     or has no year at all. Films the user has actually logged are added separately
+     and are never affected by this. */
+  const THIS_YEAR = new Date().getFullYear();
+  const unreleased = id => {
+    const m = byId.get(id);
+    if (!m) return false;
+    if (rat.get(id)) return false;                 // has votes, so it is out
+    return !m.year || m.year >= THIS_YEAR;
+  };
   const ensure = id => {
     if (films.has(id)) return films.get(id);
     const m = byId.get(id), r = rat.get(id), ds = crew.get(id) || [];
@@ -102,11 +116,13 @@ function rss(u) {
     films.set(id, rec); return rec;
   };
 
-  let dropped = 0;
+  let dropped = 0, skippedUnreleased = 0;
   topIds.forEach(id => { if (excluded(id)) { dropped++; return; } ensure(id); });
   crew.forEach((ds, id) => {
     if (ds.some(d => exclIds.has(d))) { if (!topIds.has(id)) dropped++; return; }
-    if (ds.some(d => dirIds.has(d) || bongIds.has(d) || nvIds.has(d))) ensure(id);
+    if (!ds.some(d => dirIds.has(d) || bongIds.has(d) || nvIds.has(d))) return;
+    if (unreleased(id)) { skippedUnreleased++; return; }
+    ensure(id);
   });
 
   let unresolved = 0;
@@ -196,7 +212,7 @@ function rss(u) {
   fs.mkdirSync(APP + 'public/data', { recursive: true });
   fs.writeFileSync(APP + 'public/data/films.json', JSON.stringify(payload));
   const kb = Math.round(fs.statSync(APP + 'public/data/films.json').size / 1024);
-  console.log('films:', all.length, '| dropped (excluded directors):', dropped, '| unresolved:', unresolved);
+  console.log('films:', all.length, '| dropped (excluded directors):', dropped, '| skipped (unreleased/announced):', skippedUnreleased, '| unresolved:', unresolved);
   console.log('with RT:', rtN, '| with poster:', posterN);
   console.log('genres:', genres.length, '| directors:', directors.length);
   console.log('written public/data/films.json —', kb, 'KB');

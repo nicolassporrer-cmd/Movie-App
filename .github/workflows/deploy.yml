@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  # Callable, so the nightly refresh can publish its own commit. A push made with
+  # the default GITHUB_TOKEN does NOT trigger other workflows — GitHub blocks that
+  # to prevent recursion — so without this the refreshed data never reaches Pages.
+  workflow_call:
 
 permissions:
   contents: read

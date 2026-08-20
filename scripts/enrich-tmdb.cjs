@@ -1,36 +1,40 @@
-/* Fetches French streaming availability from TMDB (data sourced from JustWatch).
+/* Fetches worldwide streaming availability from TMDB (data sourced from JustWatch).
 
-   Two caches, deliberately with different lifetimes:
-     data/tmdb-ids.json      IMDb id -> TMDB id. PERMANENT — the mapping never changes.
-     data/providers-fr.json  TMDB id -> subscription providers. PERISHABLE — streaming
-                             rights rotate constantly, so entries expire and refetch.
+   TMDB returns EVERY country in a single call — 48 for a typical film. The earlier
+   version read one country and threw the rest away, then fetched a second region
+   separately for Canal+. That was wasted work: the whole world arrives for free.
 
-   That difference is the whole reason this is a separate script from the OMDb one:
-   OMDb data is correct forever, provider data rots.
+   Two caches with deliberately different lifetimes:
+     data/tmdb-ids.json        IMDb id -> TMDB id. PERMANENT — the mapping never changes.
+     data/providers-world.json TMDB id -> availability. PERISHABLE — rights rotate,
+                               so entries carry a timestamp and expire.
+
+   To keep the cache small, the home region keeps every provider (needed for the
+   "Others" bucket) while other countries keep only services the user subscribes to,
+   since the only question elsewhere is "could I reach this over a VPN".
 
    Usage:
-     node scripts/enrich-tmdb.cjs --probe              one film, show what comes back
-     node scripts/enrich-tmdb.cjs --dry-run            report only
-     node scripts/enrich-tmdb.cjs --limit 600          cap the run
-     node scripts/enrich-tmdb.cjs --max-age-days 7     refetch anything older than this
+     node scripts/enrich-tmdb.cjs --probe
+     node scripts/enrich-tmdb.cjs --dry-run
+     node scripts/enrich-tmdb.cjs --limit 600
+     node scripts/enrich-tmdb.cjs --max-age-days 7
 */
 const fs = require('fs'), path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 const FILMS = path.join(ROOT, 'public', 'data', 'films.json');
 const IDS = path.join(ROOT, 'data', 'tmdb-ids.json');
+const WORLD = path.join(ROOT, 'data', 'providers-world.json');
+const CFG = path.join(ROOT, 'data', 'regions.json');
 
+const cfg = JSON.parse(fs.readFileSync(CFG, 'utf8'));
+const HOME = cfg.primary || 'US';
 
-// Region is per-run and each gets its own cache file — Nicolas watches from the US
-// but VPNs to France for Canal+, so both regions are fetched and merged later.
-const PROV_FOR = r => path.join(ROOT, 'data', 'providers-' + r.toLowerCase() + '.json');
-const regionArg = (() => { const i = process.argv.indexOf('--region'); return i > -1 ? process.argv[i + 1] : null; })();
-const REGION = (regionArg || process.env.TMDB_REGION || 'US').toUpperCase();
-const CONCURRENCY = 6;                 // polite; TMDB allows far more
+const CONCURRENCY = 6;
 const argv = process.argv.slice(2);
 const has = f => argv.includes(f);
 const val = (f, d) => { const i = argv.indexOf(f); return i > -1 && argv[i + 1] ? argv[i + 1] : d; };
 const DRY = has('--dry-run'), PROBE = has('--probe');
-const LIMIT = parseInt(val('--limit', '3000'), 10);
+const LIMIT = parseInt(val('--limit', '5000'), 10);
 const MAX_AGE_DAYS = parseInt(val('--max-age-days', '7'), 10);
 
 function readKey() {
@@ -41,20 +45,27 @@ function readKey() {
   return m ? m[1].trim().replace(/^["']|["']$/g, '') : null;
 }
 const KEY = readKey();
-if (!KEY) {
-  console.error('No TMDB key. Set TMDB_API_KEY in the environment, or in a .env FILE at the repo root.');
-  process.exit(1);
+if (!KEY) { console.error('No TMDB key. Set TMDB_API_KEY, or put it in a .env FILE at the repo root.'); process.exit(1); }
+
+/* TMDB lists billing routes, not services. Kept in step with apply-providers.cjs. */
+function canonical(raw) {
+  let n = String(raw).replace(/\s{2,}/g, ' ').trim();
+  n = n.replace(/\s+(Amazon|Apple TV|Roku)\s+(Premium\s+)?Channels?$/i, '');
+  n = n.replace(/\s+(Standard\s+)?with\s+Ads$/i, '');
+  n = n.replace(/\s+(Premium\s+Plus|Premium\+|Premium|Basic|Standard|Essential)$/i, '');
+  n = n.replace(/\s+Plus\b/g, '+');
+  return n.trim();
 }
+const MINE = new Set((cfg.listed || []).map(canonical));
 
 const readJson = (p, d) => fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, 'utf8')) : d;
 const ids = readJson(IDS, {});
-const PROV = PROV_FOR(REGION);
-const prov = readJson(PROV, {});
+const world = readJson(WORLD, {});
 const payload = JSON.parse(fs.readFileSync(FILMS, 'utf8'));
 
 const NOW = Date.now();
 const AGE_MS = MAX_AGE_DAYS * 86400000;
-const stale = entry => !entry || !entry.at || (NOW - entry.at) > AGE_MS;
+const stale = e => !e || !e.at || (NOW - e.at) > AGE_MS;
 
 async function api(url, tries = 3) {
   for (let i = 0; i < tries; i++) {
@@ -72,76 +83,69 @@ const findTmdb = async imdb => {
   return m ? m.id : null;
 };
 
-const fetchProviders = async tmdbId => {
+// One call, every country. `flatrate` and `free` only — rent and buy answer a
+// different question and would add a dozen options per film.
+async function fetchWorld(tmdbId) {
   const j = await api('https://api.themoviedb.org/3/movie/' + tmdbId + '/watch/providers?api_key=' + KEY);
-  const r = (j.results || {})[REGION];
-  // `flatrate` = included with a subscription. rent/buy are separate purchases and
-  // are deliberately ignored: 13 rental options per film is noise, not information.
-  const subs = r && r.flatrate ? r.flatrate.map(p => p.provider_name) : [];
-  const free = r && r.free ? r.free.map(p => p.provider_name) : [];
-  return { subs: [...new Set([...subs, ...free])], link: r ? r.link : null };
-};
+  const res = j.results || {};
+  const out = { home: [], abroad: {} };
+  Object.entries(res).forEach(([cc, v]) => {
+    const subs = [...new Set([...(v.flatrate || []), ...(v.free || [])].map(x => canonical(x.provider_name)))];
+    if (!subs.length) return;
+    if (cc === HOME) { out.home = subs; return; }
+    const mine = subs.filter(s => MINE.has(s));
+    if (mine.length) out.abroad[cc] = mine;
+  });
+  return out;
+}
 
 (async () => {
   const films = payload.films.filter(f => f.k && !f.k.startsWith('lb:'));
-  console.log('films with an IMDb id:', films.length);
-  console.log('tmdb id mappings cached:', Object.keys(ids).length, '| provider entries cached:', Object.keys(prov).length);
+  console.log('films with an IMDb id:', films.length, '| home region:', HOME);
+  console.log('services treated as "mine":', [...MINE].join(', '));
+  console.log('tmdb ids cached:', Object.keys(ids).length, '| world entries cached:', Object.keys(world).length);
 
   if (PROBE) {
-    const f = films[0];
+    const f = films.find(x => x.t === 'Mommy') || films[0];
     const tid = ids[f.k] || await findTmdb(f.k);
-    console.log('probe:', f.t, '(' + f.k + ') -> TMDB', tid);
-    if (tid) console.log(JSON.stringify(await fetchProviders(tid), null, 1));
+    console.log('\nprobe:', f.t, '->', tid);
+    console.log(JSON.stringify(await fetchWorld(tid), null, 1));
     return;
   }
 
-  const needId = films.filter(f => ids[f.k] === undefined);
-  const needProv = films.filter(f => {
-    const tid = ids[f.k];
-    return tid !== null && (tid !== undefined || needId.includes(f)) && stale(prov[tid]);
-  });
-  console.log('need a TMDB id:', needId.length, '| need provider data (missing or older than ' + MAX_AGE_DAYS + 'd):', needProv.length);
-
-  if (DRY) {
-    console.log('\nDRY RUN — nothing written.');
-    needProv.slice(0, 10).forEach((f, i) => console.log('  ' + (i + 1) + '. ' + f.t + ' (' + f.y + ')'));
-    return;
+  const needId = films.filter(f => ids[f.k] === undefined).slice(0, LIMIT);
+  if (needId.length) {
+    let n = 0;
+    await runPool(needId, async f => {
+      try { ids[f.k] = await findTmdb(f.k); } catch { return; }
+      if (++n % 200 === 0) { fs.writeFileSync(IDS, JSON.stringify(ids)); console.log('  ids ' + n + '/' + needId.length); }
+    });
+    fs.writeFileSync(IDS, JSON.stringify(ids));
+    console.log('tmdb ids resolved this run:', n);
   }
 
-  // Pass 1: resolve missing TMDB ids
-  let done = 0, failed = 0;
-  const queue = needId.slice(0, LIMIT);
-  await runPool(queue, async f => {
-    try { ids[f.k] = await findTmdb(f.k); }
-    catch { ids[f.k] = undefined; failed++; return; }
-    done++;
-    if (done % 200 === 0) { fs.writeFileSync(IDS, JSON.stringify(ids)); console.log('  ids ' + done + '/' + queue.length); }
-  });
-  fs.writeFileSync(IDS, JSON.stringify(ids));
-  const mapped = Object.values(ids).filter(v => v !== null && v !== undefined).length;
-  console.log('tmdb ids resolved:', mapped, '| unmapped:', Object.values(ids).filter(v => v === null).length, '| errors:', failed);
+  const targets = [...new Set(films.map(f => ids[f.k]).filter(Boolean))].filter(t => stale(world[t])).slice(0, LIMIT);
+  console.log('films needing availability (missing or older than ' + MAX_AGE_DAYS + 'd):', targets.length);
+  if (DRY) { console.log('DRY RUN — nothing written.'); return; }
+  if (!targets.length) { console.log('Everything is current.'); return; }
 
-  // Pass 2: providers for anything missing or stale
-  const targets = [...new Set(films.map(f => ids[f.k]).filter(v => v))].filter(t => stale(prov[t])).slice(0, LIMIT);
-  console.log('fetching providers for', targets.length, 'films...');
-  let pdone = 0, pfail = 0;
+  let ok = 0, fail = 0;
   await runPool(targets, async tid => {
-    try {
-      const r = await fetchProviders(tid);
-      prov[tid] = { subs: r.subs, link: r.link, at: Date.now() };
-      pdone++;
-    } catch { pfail++; }
-    if ((pdone + pfail) % 200 === 0) { fs.writeFileSync(PROV, JSON.stringify(prov)); console.log('  providers ' + (pdone + pfail) + '/' + targets.length); }
+    try { const w = await fetchWorld(tid); world[tid] = { home: w.home, abroad: w.abroad, at: Date.now() }; ok++; }
+    catch { fail++; }
+    if ((ok + fail) % 200 === 0) { fs.writeFileSync(WORLD, JSON.stringify(world)); console.log('  ' + (ok + fail) + '/' + targets.length); }
   });
-  fs.writeFileSync(PROV, JSON.stringify(prov));
+  fs.writeFileSync(WORLD, JSON.stringify(world));
 
-  const withSubs = Object.values(prov).filter(p => p.subs && p.subs.length).length;
-  const names = {};
-  Object.values(prov).forEach(p => (p.subs || []).forEach(n => names[n] = (names[n] || 0) + 1));
-  console.log('\nprovider entries:', Object.keys(prov).length, '| with a subscription option:', withSubs, '| errors:', pfail);
-  console.log('top services in ' + REGION + ':');
-  Object.entries(names).sort((a, b) => b[1] - a[1]).slice(0, 15)
-    .forEach(([n, c]) => console.log('  ' + String(c).padStart(4) + '  ' + n));
+  const vals = Object.values(world);
+  const homeOnly = vals.filter(v => v.home && v.home.length).length;
+  const abroadOnly = vals.filter(v => (!v.home || !v.home.length) && v.abroad && Object.keys(v.abroad).length).length;
+  console.log('\nfetched ok:', ok, '| failed:', fail);
+  console.log('entries:', vals.length, '| streaming at home:', homeOnly, '| not at home but on one of your services abroad:', abroadOnly);
+  const ccTally = {};
+  vals.forEach(v => Object.keys(v.abroad || {}).forEach(cc => ccTally[cc] = (ccTally[cc] || 0) + 1));
+  console.log('top countries for VPN options:', Object.entries(ccTally).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([c, n]) => c + ':' + n).join('  '));
+  console.log('cache size:', Math.round(fs.statSync(WORLD).size / 1024), 'KB');
 })();
 
 async function runPool(items, fn) {

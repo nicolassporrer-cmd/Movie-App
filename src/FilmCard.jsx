@@ -1,4 +1,4 @@
-import { RT_FRESH, TMDB_WATCH_URL } from './constants.js';
+import { RT_FRESH, TMDB_WATCH_URL, countryName } from './constants.js';
 
 // Module level, never nested in another render — a nested component remounts on
 // every keystroke and destroys focus and state.
@@ -80,6 +80,12 @@ export default function FilmCard({ film, removed, onRemove, onRestore, providers
           {subscribed.length ? (
             <span className="on-mine" title={'Included with ' + subscribed.join(', ')}>
               ▶ {subscribed.join(', ')}
+            </span>
+          ) : film.alt && mine.has(providers[film.alt[0]]) ? (
+            /* On a service he pays for, but only in another country — a VPN hop away.
+               Pink, deliberately distinct from the green "just press play" case. */
+            <span className="on-vpn" title={'On your ' + providers[film.alt[0]] + ' in ' + countryName(film.alt[1]) + ' — needs a VPN'}>
+              ⇄ {providers[film.alt[0]]} · {film.alt[1]}
             </span>
           ) : others.length ? (
             <span className="on-other" title={'Streaming on ' + others.join(', ')}>

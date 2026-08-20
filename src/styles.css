@@ -1,17 +1,17 @@
 :root {
   --bg: #fbfaf9; --fg: #1a1a1a; --mut: #6b6b6b; --card: #fff; --bd: #e5e2df;
   --acc: #00a85a; --pur: #6b4cff; --nv: #c2410c; --bong: #0369a1;
-  --imdb: #b8901f; --fresh: #d2492a; --rotten: #7a8b3a;
+  --imdb: #b8901f; --fresh: #d2492a; --rotten: #7a8b3a; --vpn: #d6247c;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #141414; --fg: #ededed; --mut: #9a9a9a; --card: #1e1e1e; --bd: #333;
-    --pur: #a48cff; --nv: #fb923c; --bong: #7dd3fc; --imdb: #d8b04a; --rotten: #a3b56a;
+    --pur: #a48cff; --nv: #fb923c; --bong: #7dd3fc; --imdb: #d8b04a; --rotten: #a3b56a; --vpn: #ff7ab8;
   }
 }
 :root[data-theme="dark"] {
   --bg: #141414; --fg: #ededed; --mut: #9a9a9a; --card: #1e1e1e; --bd: #333;
-  --pur: #a48cff; --nv: #fb923c; --bong: #7dd3fc; --imdb: #d8b04a; --rotten: #a3b56a;
+  --pur: #a48cff; --nv: #fb923c; --bong: #7dd3fc; --imdb: #d8b04a; --rotten: #a3b56a; --vpn: #ff7ab8;
 }
 
 * { box-sizing: border-box; }
@@ -209,4 +209,11 @@ input[type="range"] { width: 118px; accent-color: var(--acc); }
 .more-dirs {
   color: var(--fg); opacity: .55; font-weight: 700; cursor: help;
   border-bottom: 1px dotted currentColor;
+}
+
+/* Reachable on a service you pay for, but only from another country. Pink, so it
+   never reads as "press play now" — it means "connect the VPN first". */
+.on-vpn {
+  color: var(--vpn); font-weight: 700; display: inline-block;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%;
 }

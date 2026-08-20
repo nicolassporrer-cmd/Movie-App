@@ -1,12 +1,15 @@
-/* Merges the per-region provider caches into public/data/films.json.
+/* Merges data/providers-world.json into public/data/films.json.
 
-   Region setup lives in data/regions.json: a primary region supplies everything,
-   and `extras` pulls named services from other regions on top (Canal+ from France,
-   which Nicolas reaches over a VPN).
+   Two distinct answers per film:
+     pv   — services carrying it in the home region. Green when he subscribes.
+     alt  — ONE service+country pair abroad, when it is NOT on his services at home
+            but is on one of them somewhere else. Shown pink: reachable over a VPN.
 
-   Services listed individually are the ones Nicolas actually subscribes to, set in
-   `listed`. Ranking by film count would surface Kanopy and Philo and bury Netflix,
-   so volume is deliberately not the criterion. Everything else becomes "Others".
+   Only one abroad option is emitted. He asked for a single solution, and a list of
+   nine countries is not a decision, it is homework.
+
+   Provider names are interned; the country is a two-letter code. Storing the full
+   worldwide map per film would add megabytes to a payload the phone downloads.
 
    Upsert only: a missing cache entry leaves a film's existing data alone.
 */
@@ -14,128 +17,97 @@ const fs = require('fs'), path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 const FILMS = path.join(ROOT, 'public', 'data', 'films.json');
 const IDS = path.join(ROOT, 'data', 'tmdb-ids.json');
+const WORLD = path.join(ROOT, 'data', 'providers-world.json');
 const CFG = path.join(ROOT, 'data', 'regions.json');
-const provPath = r => path.join(ROOT, 'data', 'providers-' + r.toLowerCase() + '.json');
 
 const cfg = JSON.parse(fs.readFileSync(CFG, 'utf8'));
 const OTHER = cfg.otherLabel || 'Others';
+const HOME = cfg.primary || 'US';
+const VPN_ORDER = cfg.vpnCountries || [];
 
+if (!fs.existsSync(WORLD)) {
+  console.error('No availability cache at ' + WORLD + ' — run enrich-tmdb.cjs first.');
+  process.exit(1);
+}
 
 const payload = JSON.parse(fs.readFileSync(FILMS, 'utf8'));
 const ids = JSON.parse(fs.readFileSync(IDS, 'utf8'));
+const world = JSON.parse(fs.readFileSync(WORLD, 'utf8'));
 
-const readProv = r => {
-  const p = provPath(r);
-  if (!fs.existsSync(p)) { console.warn('  (no cache for region ' + r + ' — skipping)'); return {}; }
-  return JSON.parse(fs.readFileSync(p, 'utf8'));
-};
+const listed = cfg.listed || [];
+const listedSet = new Set(listed);
 
-/* TMDB lists billing routes, not services: "Netflix" and "Netflix Standard with Ads"
-   are separate, as is an "… Amazon Channel" twin of almost everything. Collapse to
-   the name a person would actually say. */
-function canonical(raw) {
-  let n = String(raw).replace(/\s{2,}/g, ' ').trim();
-  n = n.replace(/\s+(Amazon|Apple TV|Roku)\s+(Premium\s+)?Channels?$/i, '');
-  n = n.replace(/\s+(Standard\s+)?with\s+Ads$/i, '');
-  // Tier suffixes, longest first — "Peacock Premium Plus" must not survive as
-  // "Peacock Premium+" once the Plus rule below runs.
-  n = n.replace(/\s+(Premium\s+Plus|Premium\+|Premium|Basic|Standard|Essential)$/i, '');
-  n = n.replace(/\s+Plus\b/g, '+');   // "Paramount Plus" -> "Paramount+", leaves "Cine+ OCS" intact
-  return n.trim();
-}
+// Listed services first, in his order; everything else collapses to "Others".
+const providers = [...listed];
+const otherIdx = providers.push(OTHER) - 1;
+const idxOf = new Map(listed.map((n, i) => [n, i]));
+const pick = n => listedSet.has(n) ? idxOf.get(n) : otherIdx;
 
-const primary = readProv(cfg.primary);
-const extraRegions = Object.keys(cfg.extras || {});
-const extraCaches = Object.fromEntries(extraRegions.map(r => [r, readProv(r)]));
-const extraAllowed = Object.fromEntries(
-  extraRegions.map(r => [r, new Set((cfg.extras[r] || []).map(canonical))])
-);
-const regionOf = {};   // canonical name -> region it came from, for services outside the primary
+// Rank abroad options: his preferred service first, then the preferred country.
+const svcRank = n => { const i = listed.indexOf(n); return i === -1 ? 99 : i; };
+const ccRank = c => VPN_ORDER.indexOf(c);
+/* Hard limit, not just a ranking: without it the fallback offered "Netflix Angola"
+   for Shawshank, picking whatever country sorted first. A suggestion he cannot act
+   on is worse than no suggestion. */
+const VPN_OK = new Set(VPN_ORDER);
 
-// Pass 1: resolve each film's canonical service names across all configured regions
-const perFilm = new Map();
-let mapped = 0, oldest = Infinity, newest = 0;
+let mapped = 0, atHome = 0, viaVpn = 0, nowhere = 0;
+let oldest = Infinity, newest = 0;
+const ccTally = {}, svcTally = {};
+
 payload.films.forEach(f => {
   const tid = ids[f.k];
-  if (tid == null) { delete f.tid; delete f.pv; return; }
+  if (tid == null) { delete f.tid; delete f.pv; delete f.alt; return; }
   f.tid = tid; mapped++;
 
-  const set = new Set();
-  const e = primary[tid];
-  if (e) {
-    if (e.at) { oldest = Math.min(oldest, e.at); newest = Math.max(newest, e.at); }
-    (e.subs || []).forEach(n => set.add(canonical(n)));
+  const w = world[tid];
+  if (!w) { delete f.pv; delete f.alt; return; }
+  if (w.at) { oldest = Math.min(oldest, w.at); newest = Math.max(newest, w.at); }
+
+  const home = w.home || [];
+  if (home.length) f.pv = [...new Set(home.map(pick))].sort((a, b) => a - b);
+  else delete f.pv;
+
+  // Only offer a VPN route when it is not already on one of his services at home.
+  if (home.some(n => listedSet.has(n))) { atHome++; delete f.alt; return; }
+
+  const options = [];
+  Object.entries(w.abroad || {}).forEach(([cc, svcs]) =>
+    { if (!VPN_OK.has(cc)) return; svcs.forEach(s => { if (listedSet.has(s)) options.push([s, cc]); }); });
+
+  if (!options.length) {
+    delete f.alt;
+    if (!home.length) nowhere++;
+    return;
   }
-  extraRegions.forEach(r => {
-    const x = extraCaches[r][tid];
-    if (!x) return;
-    if (x.at) { oldest = Math.min(oldest, x.at); newest = Math.max(newest, x.at); }
-    (x.subs || []).forEach(raw => {
-      const n = canonical(raw);
-      if (extraAllowed[r].has(n)) { set.add(n); regionOf[n] = r; }
-    });
-  });
-  perFilm.set(f.k, set);
-});
 
-// Pass 2: rank services, keep the top N, bucket the rest
-const tally = new Map();
-perFilm.forEach(set => set.forEach(n => tally.set(n, (tally.get(n) || 0) + 1)));
-const ranked = [...tally.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-
-/* `listed` is Nicolas's actual subscriptions, not the highest-volume services.
-   Ranking by film count surfaces Kanopy, Criterion and Philo — which carry hundreds
-   of old films — while pushing Netflix into the tail. Volume is the wrong question;
-   "do you pay for it" is the right one. Anything unlisted becomes "Others". */
-const listed = (cfg.listed || []).map(canonical);
-const missing = listed.filter(n => !tally.has(n));
-const top = listed.filter(n => tally.has(n));
-const topSet = new Set(top);
-const tail = ranked.filter(([n]) => !topSet.has(n));
-if (missing.length) console.warn('WARNING: listed but present on no film:', missing.join(', '));
-
-const providers = [...top];
-const otherIdx = tail.length ? providers.push(OTHER) - 1 : -1;
-const idxOf = new Map(top.map((n, i) => [n, i]));
-
-let withProviders = 0, inOther = 0;
-payload.films.forEach(f => {
-  const set = perFilm.get(f.k);
-  if (!set || !set.size) { delete f.pv; return; }
-  const out = new Set();
-  let usedOther = false;
-  set.forEach(n => {
-    if (topSet.has(n)) out.add(idxOf.get(n));
-    else if (otherIdx >= 0) { out.add(otherIdx); usedOther = true; }
-  });
-  if (!out.size) { delete f.pv; return; }
-  f.pv = [...out].sort((a, b) => a - b);
-  withProviders++;
-  if (usedOther) inOther++;
+  options.sort((a, b) =>
+    svcRank(a[0]) - svcRank(b[0]) || ccRank(a[1]) - ccRank(b[1]) || a[1].localeCompare(b[1]));
+  const [svc, cc] = options[0];
+  f.alt = [idxOf.get(svc), cc];
+  viaVpn++;
+  ccTally[cc] = (ccTally[cc] || 0) + 1;
+  svcTally[svc] = (svcTally[svc] || 0) + 1;
 });
 
 payload.providers = providers;
-payload.providerRegions = Object.fromEntries(
-  providers.filter(n => regionOf[n]).map(n => [n, regionOf[n]])
-);
-payload.region = cfg.primary;
+payload.region = HOME;
 payload.defaultSubs = (cfg.defaultSubs || []).filter(n => providers.includes(n));
-payload.counts.withProviders = withProviders;
+payload.counts.withProviders = payload.films.filter(f => f.pv && f.pv.length).length;
+payload.counts.viaVpn = viaVpn;
+delete payload.providerRegions;
 
 const fmt = ms => { const d = new Date(ms), p = n => String(n).padStart(2, '0'); return d.getUTCFullYear() + '-' + p(d.getUTCMonth() + 1) + '-' + p(d.getUTCDate()); };
 payload.providersAt = newest ? fmt(newest) : null;
 
 fs.writeFileSync(FILMS, JSON.stringify(payload));
 
-console.log('region:', cfg.primary, '| extras:', extraRegions.map(r => r + ':' + [...extraAllowed[r]].join(',')).join(' ') || 'none');
-console.log('films mapped to a TMDB id:', mapped, '/', payload.films.length);
-console.log('films on at least one service:', withProviders, '| of which only on tail services:', inOther);
+console.log('home region:', HOME, '| films mapped:', mapped, '/', payload.films.length);
+console.log('on one of your services at home :', atHome);
+console.log('reachable only via VPN          :', viaVpn);
+console.log('streaming on nothing, anywhere  :', nowhere);
 console.log('');
-console.log('listed services (' + top.length + '):');
-top.forEach((n, i) => console.log(
-  '  ' + String(i + 1).padStart(2) + '. ' + n.padEnd(22) + String(tally.get(n) || 0).padStart(4) + ' films'
-  
-  + (regionOf[n] ? '   [' + regionOf[n] + ' — via VPN]' : '')));
-console.log('');
-console.log('grouped into "' + OTHER + '": ' + tail.length + ' services, e.g. ' + tail.slice(0, 8).map(x => x[0]).join(', '));
+console.log('VPN suggestions by service :', Object.entries(svcTally).sort((a, b) => b[1] - a[1]).map(([s, n]) => s + ' ' + n).join('  ') || 'none');
+console.log('VPN suggestions by country :', Object.entries(ccTally).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([c, n]) => c + ' ' + n).join('  ') || 'none');
+console.log('data gathered:', payload.providersAt);
 console.log('films.json now', Math.round(fs.statSync(FILMS).size / 1024), 'KB');

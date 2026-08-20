@@ -1,12 +1,7 @@
 {
-  "_note": "Nicolas watches from the US and VPNs to France for Canal+. The primary region supplies everything; `extras` pulls named services from other regions on top.",
-
+  "_note": "Nicolas watches from the US. TMDB returns every country in one call, so a film not on his services at home may still be on one of them abroad, reachable over a VPN — including Canal+ in France, which he already does. Canal+ therefore needs no special-casing any more: France is simply one more VPN option.",
   "primary": "US",
-  "extras": {
-    "FR": ["Canal+"]
-  },
-
-  "_listedNote": "Ranking services by film count is the wrong criterion for a subscription picker — it surfaces library and arthouse services that carry hundreds of old films (Kanopy 376, Criterion 374, Philo 203) and pushes Netflix into the tail. `listed` is therefore Nicolas's actual subscriptions, confirmed 2026-08-19. Everything else is grouped as 'Others'. Add a service here if he subscribes to one.",
+  "_listedNote": "Ranking services by film count is the wrong criterion for a subscription picker — it surfaces library and arthouse services carrying hundreds of old films (Kanopy 376, Criterion 374, Philo 203) and pushes Netflix into the tail. `listed` is Nicolas's actual subscriptions, confirmed 2026-08-19. Everything else is grouped as 'Others'. These are also the only services searched for abroad, since a VPN is pointless for a service he does not pay for.",
   "listed": [
     "Netflix",
     "Disney+",
@@ -14,7 +9,6 @@
     "Peacock",
     "Canal+"
   ],
-
   "defaultSubs": [
     "Netflix",
     "Disney+",
@@ -22,6 +16,39 @@
     "Peacock",
     "Canal+"
   ],
-
+  "_vpnNote": "Only these countries are ever suggested. The preference order matters (France first, since that VPN route already works for Canal+), but so does the hard limit: without it the picker offered \"Netflix Angola\" for Shawshank, because it fell back to whatever country was alphabetically first. A suggestion he cannot act on is worse than none. These are the regions consumer VPNs actually serve well.",
+  "vpnCountries": [
+    "FR",
+    "CA",
+    "GB",
+    "DE",
+    "NL",
+    "BE",
+    "CH",
+    "ES",
+    "IT",
+    "AT",
+    "IE",
+    "SE",
+    "NO",
+    "DK",
+    "FI",
+    "PT",
+    "PL",
+    "CZ",
+    "AU",
+    "NZ",
+    "JP",
+    "KR",
+    "SG",
+    "HK",
+    "BR",
+    "MX",
+    "AR",
+    "IN",
+    "ZA",
+    "TR",
+    "RO"
+  ],
   "otherLabel": "Others"
 }

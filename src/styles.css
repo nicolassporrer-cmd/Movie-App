@@ -205,3 +205,8 @@ input[type="range"] { width: 118px; accent-color: var(--acc); }
   font-size: 9px; font-weight: 700; letter-spacing: .04em;
   padding: 1px 4px; border-radius: 3px; border: 1px solid currentColor; opacity: .7;
 }
+
+.more-dirs {
+  color: var(--fg); opacity: .55; font-weight: 700; cursor: help;
+  border-bottom: 1px dotted currentColor;
+}

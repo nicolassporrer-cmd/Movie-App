@@ -36,7 +36,19 @@ export default function FilmCard({ film, removed, onRemove, onRestore, providers
           {' · '}
           {film.r ? film.r + 'm' : <span className="unknown">&mdash;</span>}
           {' · '}
-          {film.d || <span className="unknown">&mdash;</span>}
+          {film.d
+            ? <>
+                {film.d}
+                {/* Anthologies credit several directors. Showing only the first two
+                    made a Tarantino search return Grindhouse with his name nowhere
+                    on the card, which reads as a bug rather than a co-credit. */}
+                {film.da
+                  ? <span className="more-dirs" title={'All credited directors: ' + film.da}>
+                      {' +' + Math.max(1, film.da.split(', ').length - 2)}
+                    </span>
+                  : null}
+              </>
+            : <span className="unknown">&mdash;</span>}
         </div>
 
         <div className="genres">

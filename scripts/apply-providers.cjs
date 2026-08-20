@@ -102,10 +102,34 @@ payload.providersAt = newest ? fmt(newest) : null;
 
 fs.writeFileSync(FILMS, JSON.stringify(payload));
 
+/* Buckets must be mutually exclusive AND exhaustive. The first version counted
+   "streaming nowhere" only when a film had no provider at all, so 459 films that
+   stream solely on services he does not subscribe to fell through every counter
+   and vanished from the summary — 386 + 888 + 441 did not come close to 2,199.
+   A total that does not reconcile hides exactly the cases worth noticing, so it
+   is asserted below rather than trusted. */
+const listedIdx = new Set(listed.map(n => idxOf.get(n)));
+const b = { green: 0, vpn: 0, otherOnly: 0, none: 0, noData: 0 };
+payload.films.forEach(f => {
+  if (!f.tid) { b.noData++; return; }
+  if (f.pv && f.pv.some(i => listedIdx.has(i))) { b.green++; return; }
+  if (f.alt) { b.vpn++; return; }
+  if (f.pv && f.pv.length) { b.otherOnly++; return; }
+  b.none++;
+});
+const sum = b.green + b.vpn + b.otherOnly + b.none + b.noData;
+
 console.log('home region:', HOME, '| films mapped:', mapped, '/', payload.films.length);
-console.log('on one of your services at home :', atHome);
-console.log('reachable only via VPN          :', viaVpn);
-console.log('streaming on nothing, anywhere  :', nowhere);
+console.log('  on your services at home        :', b.green);
+console.log('  on your services abroad (VPN)   :', b.vpn);
+console.log('  streaming, but only on Others   :', b.otherOnly);
+console.log('  not streaming anywhere          :', b.none);
+console.log('  no availability data            :', b.noData);
+console.log('  ' + '-'.repeat(34) + ' ' + sum + ' / ' + payload.films.length);
+if (sum !== payload.films.length) {
+  console.error('  *** buckets do not reconcile — ' + (payload.films.length - sum) + ' films unaccounted for ***');
+  process.exitCode = 1;
+}
 console.log('');
 console.log('VPN suggestions by service :', Object.entries(svcTally).sort((a, b) => b[1] - a[1]).map(([s, n]) => s + ' ' + n).join('  ') || 'none');
 console.log('VPN suggestions by country :', Object.entries(ccTally).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([c, n]) => c + ' ' + n).join('  ') || 'none');

@@ -78,9 +78,14 @@ jobs:
         if: steps.tmdb.outputs.present == 'true'
         env:
           TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
-        run: |
-          node scripts/enrich-tmdb.cjs --region US --max-age-days 7
-          node scripts/enrich-tmdb.cjs --region FR --max-age-days 7
+        # One call now covers every country, so the old per-region pair is gone —
+        # the second invocation was a no-op against an already-fresh cache.
+        #
+        # 3 days, not 7: streaming rights typically turn over at the start of a
+        # month, and a week of staleness means a week of telling him a film is
+        # somewhere it no longer is. Roughly 2,200 calls twice a week, which TMDB
+        # does not meter and which takes about six minutes.
+        run: node scripts/enrich-tmdb.cjs --max-age-days 3
 
       - name: Merge streaming availability into the dataset
         if: steps.tmdb.outputs.present == 'true'

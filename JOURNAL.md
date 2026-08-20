@@ -46,6 +46,40 @@ Decisions that would be expensive or dangerous to get wrong on a rebuild.
 
 ## Entries
 
+### 2026-08-20 #13 — Nightly refresh was publishing nothing; VPN routing; three directors added
+
+**Branch:** `main` · **Status:** shipped
+
+**What changed**
+- **The nightly job had never published.** It ran, succeeded, and committed — while the live site stayed frozen.
+- **Worldwide availability.** A film not on his services in the US now shows one country where one of them does carry it, in pink. **888 films became reachable**, against 386 available at home.
+- Added **Olivia Wilde** (3), **Xavier Dolan** (8) and **Justine Triet** (5).
+- Filtered **71 unreleased IMDb announcements** out of the catalogue.
+- Fixed four directors unreachable from the dropdown, a misleading director display, and a stale subscription list.
+
+**Gotchas discovered** — five, and every one failed silently
+
+- **A push made with the default `GITHUB_TOKEN` does not trigger other workflows.** GitHub blocks it to prevent recursion. So `daily-refresh` committed fresh data every night and `deploy.yml` never fired: green runs, updating repo, dead site, nothing wrong in any log. The repo held 172 seen / 650 missing RT / 1,851 posters while Pages served 171 / 1,387 / 951. **Any workflow that commits must publish its own commit.**
+- **Hand-typed names drift from the data.** `directors.json` said "Alejandro G. Inarritu"; the films said "Iñárritu". The dropdown matched nothing, so 11 films looked absent — and the same for Kieślowski (13), Cuarón (12) and Forman (16). **52 films unreachable.** Names now come from `name.basics`, never from config. The first diagnostic regex, `/arritu/i`, also failed to match "Iñárritu" — the accent defeats it — which nearly confirmed the wrong conclusion.
+- **`npm run data` silently discarded streaming data and RSS-synced films.** A full rebuild regenerates from source, and `build-data` reads the OMDb cache but not the provider caches. Streaming went to zero. The script now chains build → sync → providers.
+- **A ranked fallback with no hard limit produces absurd answers.** The VPN picker offered "Netflix Angola" for *Shawshank*: no preferred country had it, so it took whatever sorted first. Restricted to 31 countries consumer VPNs actually serve. **A suggestion the user cannot act on is worse than none.**
+- **A stored preference outlives the options it was chosen from.** Subscriptions saved during the French era could not contain Peacock, so 40 films rendered grey on a device set up too early. Pruning dead names was insufficient — a partly-valid set like `["Netflix"]` survived and stayed wrong. Fixed by versioning the storage key.
+
+**Rejected**
+- **The Streaming Availability API** — 100 requests/day means one pass over the library takes 23 days, longer than the data stays true.
+- **Fetching one region at a time** — TMDB returns all 48 countries per call. The old code read one and discarded the rest, then fetched France separately for the same information. The worldwide feature cost **zero** extra API calls.
+- **Listing every country a film is available in** — he asked for one solution; nine options is homework, not an answer.
+- **Adding a single film on request** — his standing preference is the director's whole filmography. Recorded in `CLAUDE.md`.
+
+**Files touched**
+- `.github/workflows/daily-refresh.yml`, `deploy.yml` — publish job, `workflow_call`
+- `scripts/enrich-tmdb.cjs`, `apply-providers.cjs` — worldwide fetch, VPN routing
+- `scripts/build-data.cjs`, `enrich-omdb.cjs` — IMDb-sourced names, unreleased filter, `--only`
+- `src/*` — pink badges, +N directors, versioned subscription key
+- `data/regions.json`, `directors.json`
+
+---
+
 ### 2026-08-19 #12 — Region switched to US; service list is subscriptions, not volume
 
 **Branch:** `main` · **Status:** shipped

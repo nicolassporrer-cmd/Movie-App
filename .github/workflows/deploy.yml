@@ -22,7 +22,13 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      # Always publish the tip of main, never the commit that triggered the run.
+      # The nightly refresh commits AFTER its run starts, so a default checkout
+      # takes the pre-refresh SHA and deploys yesterday's data — a green run that
+      # publishes stale content. For a normal push this is the same commit anyway.
       - uses: actions/checkout@v4
+        with:
+          ref: main
 
       - uses: actions/setup-node@v4
         with:

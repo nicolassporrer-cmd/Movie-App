@@ -46,6 +46,34 @@ Decisions that would be expensive or dangerous to get wrong on a rebuild.
 
 ## Entries
 
+### 2026-08-21 #14 — The deploy published the wrong commit; Wim Wenders; monitoring rewritten
+
+**Branch:** `main` · **Status:** shipped
+
+**What changed**
+- Fixed the deploy publishing a stale commit. **Enrichment is now complete: 2,217 of 2,235 films have posters, and the OMDb cache covers the entire library.**
+- Added **Wim Wenders** — 43 features, 1971–2023.
+- Rewrote the morning check to compare the live site against the repo rather than trust a run's conclusion.
+
+**Why**
+- Yesterday's publish job ran, went green, and deployed the previous day's data. `actions/checkout` defaults to the SHA that *triggered* the run; the scheduled run began at 08:09:12 on `1a776aa`, and the refresh committed `0b1d806` at 08:10:53. The publish job checked out the state from before its own run. Pinning `ref: main` makes it always publish the current tip.
+
+**Rejected**
+- **Passing the new SHA into the reusable workflow as an input.** Works, but couples the two workflows for no benefit — the deploy should always publish the tip of `main`, whatever produced it.
+- **Trusting the workflow conclusion in the morning check.** It reported success through both publish failures. A conclusion that is true and useless is worse than no check, because it manufactures confidence.
+
+**Gotchas discovered**
+- **A called workflow does not appear in its own workflow's run list.** `publish` runs nested inside `daily-refresh`, so `deploy.yml`'s run history showed nothing for today and I initially concluded the deploy had not run at all. It had — and had succeeded, on the wrong commit. To see it, fetch the parent run's jobs and look for `publish / build`.
+- **"Green run" and "site updated" are independent facts.** Two different failures in three days, both with every step reporting success: the commit not triggering a deploy, then the deploy building the wrong commit. **The only reliable check is comparing the bytes the live site serves against the bytes in the repo.** Both were found because the user asked whether it had worked, not because anything reported a problem.
+- **A full rebuild can lose a recently-watched film.** The seen count went 178 → 177 after `npm run data`: the rebuild takes watched films from the CSV export plus the RSS window, and a film watched after the export that has since scrolled out of the ~50-entry feed exists in neither. Self-heals on the next export. Inherent to having no watchlist/history API.
+
+**Files touched**
+- `.github/workflows/deploy.yml` — `ref: main` on checkout
+- `data/directors.json` — Wim Wenders
+- Scheduled task `movie-app-refresh-check` — live-vs-repo comparison
+
+---
+
 ### 2026-08-20 #13 — Nightly refresh was publishing nothing; VPN routing; three directors added
 
 **Branch:** `main` · **Status:** shipped

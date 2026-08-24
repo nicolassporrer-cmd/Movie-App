@@ -27,7 +27,10 @@ const WORLD = path.join(ROOT, 'data', 'providers-world.json');
 const CFG = path.join(ROOT, 'data', 'regions.json');
 
 const cfg = JSON.parse(fs.readFileSync(CFG, 'utf8'));
-const HOME = cfg.primary || 'US';
+/* Countries he watches from keep a FULL provider list, so the grey 'Others'
+   bucket is right in each. Everywhere else keeps only his own services — the
+   only question abroad is whether a VPN could reach it. */
+const HOMES = cfg.homeCountries || [cfg.primary || 'US'];
 
 const CONCURRENCY = 6;
 const argv = process.argv.slice(2);
@@ -88,20 +91,22 @@ const findTmdb = async imdb => {
 async function fetchWorld(tmdbId) {
   const j = await api('https://api.themoviedb.org/3/movie/' + tmdbId + '/watch/providers?api_key=' + KEY);
   const res = j.results || {};
-  const out = { home: [], abroad: {} };
+  const out = { home: {}, abroad: {} };
   Object.entries(res).forEach(([cc, v]) => {
     const subs = [...new Set([...(v.flatrate || []), ...(v.free || [])].map(x => canonical(x.provider_name)))];
     if (!subs.length) return;
-    if (cc === HOME) { out.home = subs; return; }
+    if (HOMES.includes(cc)) { out.home[cc] = subs; return; }
     const mine = subs.filter(s => MINE.has(s));
     if (mine.length) out.abroad[cc] = mine;
   });
+  // A home country is also a VPN target when he is in the other one
+  HOMES.forEach(cc => { if (out.home[cc]) { const m = out.home[cc].filter(s => MINE.has(s)); if (m.length) out.abroad[cc] = m; } });
   return out;
 }
 
 (async () => {
   const films = payload.films.filter(f => f.k && !f.k.startsWith('lb:'));
-  console.log('films with an IMDb id:', films.length, '| home region:', HOME);
+  console.log('films with an IMDb id:', films.length, '| home countries:', HOMES.join(', '));
   console.log('services treated as "mine":', [...MINE].join(', '));
   console.log('tmdb ids cached:', Object.keys(ids).length, '| world entries cached:', Object.keys(world).length);
 
@@ -138,8 +143,8 @@ async function fetchWorld(tmdbId) {
   fs.writeFileSync(WORLD, JSON.stringify(world));
 
   const vals = Object.values(world);
-  const homeOnly = vals.filter(v => v.home && v.home.length).length;
-  const abroadOnly = vals.filter(v => (!v.home || !v.home.length) && v.abroad && Object.keys(v.abroad).length).length;
+  const homeOnly = vals.filter(v => v.home && Object.keys(v.home).length).length;
+  const abroadOnly = vals.filter(v => (!v.home || !Object.keys(v.home).length) && v.abroad && Object.keys(v.abroad).length).length;
   console.log('\nfetched ok:', ok, '| failed:', fail);
   console.log('entries:', vals.length, '| streaming at home:', homeOnly, '| not at home but on one of your services abroad:', abroadOnly);
   const ccTally = {};

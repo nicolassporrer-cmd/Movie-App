@@ -28,9 +28,13 @@ export const RUNTIME_MAX = 300;
    wrong. Bumping the key re-seeds the confirmed subscriptions once; unticking a
    service afterwards is respected as before. */
 export const SUBS_KEY = 'movieapp.subscriptions.v2';
-export const REGION = 'FR';
+// Which country he is watching from. Persisted separately from the subscriptions:
+// the services he pays for do not change when he travels, only their catalogues do.
+export const COUNTRY_KEY = 'movieapp.country.v1';
+
 // TMDB does not expose deep links into the provider, only its own watch page.
-export const TMDB_WATCH_URL = tid => 'https://www.themoviedb.org/movie/' + tid + '/watch?locale=' + REGION;
+// Locale follows the selected country so the page lists the right catalogue.
+export const TMDB_WATCH_URL = (tid, cc) => 'https://www.themoviedb.org/movie/' + tid + '/watch?locale=' + (cc || 'US');
 
 // Only the countries the VPN suggestions actually use — a full ISO table would be
 // dead weight for a dozen codes.

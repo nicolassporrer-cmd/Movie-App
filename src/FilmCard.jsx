@@ -2,9 +2,12 @@ import { RT_FRESH, TMDB_WATCH_URL, countryName } from './constants.js';
 
 // Module level, never nested in another render — a nested component remounts on
 // every keystroke and destroys focus and state.
-export default function FilmCard({ film, removed, onRemove, onRestore, providers, mine }) {
+export default function FilmCard({ film, removed, onRemove, onRestore, providers, mine, country }) {
   const stars = v => v == null ? null : '★'.repeat(Math.floor(v)) + (v % 1 ? '½' : '');
-  const on = (film.pv || []).map(i => providers[i]).filter(Boolean);
+  // Availability depends on where he is: the same film is green in one country,
+  // pink in the other, grey in neither.
+  const on = ((film.av && film.av[country]) || []).map(i => providers[i]).filter(Boolean);
+  const alt = film.alt && film.alt[country];
   // A service you pay for is the useful signal; the rest is context.
   const subscribed = on.filter(n => mine.has(n));
   const others = on.filter(n => !mine.has(n));
@@ -81,18 +84,18 @@ export default function FilmCard({ film, removed, onRemove, onRestore, providers
             <span className="on-mine" title={'Included with ' + subscribed.join(', ')}>
               ▶ {subscribed.join(', ')}
             </span>
-          ) : film.alt && mine.has(providers[film.alt[0]]) ? (
+          ) : alt && mine.has(providers[alt[0]]) ? (
             /* On a service he pays for, but only in another country — a VPN hop away.
                Pink, deliberately distinct from the green "just press play" case. */
-            <span className="on-vpn" title={'On your ' + providers[film.alt[0]] + ' in ' + countryName(film.alt[1]) + ' — needs a VPN'}>
-              ⇄ {providers[film.alt[0]]} · {film.alt[1]}
+            <span className="on-vpn" title={'On your ' + providers[alt[0]] + ' in ' + countryName(alt[1]) + ' — needs a VPN'}>
+              ⇄ {providers[alt[0]]} · {alt[1]}
             </span>
           ) : others.length ? (
             <span className="on-other" title={'Streaming on ' + others.join(', ')}>
               {others.slice(0, 2).join(', ')}{others.length > 2 ? ' +' + (others.length - 2) : ''}
             </span>
           ) : film.tid ? (
-            <a className="where" href={TMDB_WATCH_URL(film.tid)} target="_blank" rel="noopener noreferrer">
+            <a className="where" href={TMDB_WATCH_URL(film.tid, country)} target="_blank" rel="noopener noreferrer">
               Not streaming &middot; where to watch
             </a>
           ) : (

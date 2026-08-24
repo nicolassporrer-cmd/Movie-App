@@ -1,6 +1,5 @@
 {
   "_note": "Nicolas watches from the US. TMDB returns every country in one call, so a film not on his services at home may still be on one of them abroad, reachable over a VPN — including Canal+ in France, which he already does. Canal+ therefore needs no special-casing any more: France is simply one more VPN option.",
-  "primary": "US",
   "_listedNote": "Ranking services by film count is the wrong criterion for a subscription picker — it surfaces library and arthouse services carrying hundreds of old films (Kanopy 376, Criterion 374, Philo 203) and pushes Netflix into the tail. `listed` is Nicolas's actual subscriptions, confirmed 2026-08-19. Everything else is grouped as 'Others'. These are also the only services searched for abroad, since a VPN is pointless for a service he does not pay for.",
   "listed": [
     "Netflix",
@@ -16,9 +15,10 @@
     "Peacock",
     "Canal+"
   ],
-  "_vpnNote": "Only these countries are ever suggested. The preference order matters (France first, since that VPN route already works for Canal+), but so does the hard limit: without it the picker offered \"Netflix Angola\" for Shawshank, because it fell back to whatever country was alphabetically first. A suggestion he cannot act on is worse than none. These are the regions consumer VPNs actually serve well.",
+  "_vpnNote": "Only these countries are ever suggested. The preference order matters (France first, since that VPN route already works for Canal+), but so does the hard limit: without it the picker offered \"Netflix Angola\" for Shawshank, because it fell back to whatever country was alphabetically first. A suggestion he cannot act on is worse than none. These are the regions consumer VPNs actually serve well. US is included as a target too: it is only ever suggested when he is NOT there (the same-country guard handles that), and from France it is the only route to Peacock.",
   "vpnCountries": [
     "FR",
+    "US",
     "CA",
     "GB",
     "DE",
@@ -50,5 +50,11 @@
     "TR",
     "RO"
   ],
-  "otherLabel": "Others"
+  "otherLabel": "Others",
+  "_homeNote": "Countries Nicolas actually watches from. These keep a FULL provider list so the grey \"Others\" bucket is correct in each; every other country keeps only his own services, since the only question elsewhere is whether a VPN could reach it. Adding a country here requires a re-fetch and grows the payload, so keep the list to places he is really in.",
+  "homeCountries": [
+    "US",
+    "FR"
+  ],
+  "defaultCountry": "US"
 }

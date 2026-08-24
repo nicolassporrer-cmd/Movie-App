@@ -3,7 +3,8 @@ import FilmCard from './FilmCard.jsx';
 import Filters from './Filters.jsx';
 import ShufflePanel from './ShufflePanel.jsx';
 import Subscriptions from './Subscriptions.jsx';
-import { TABS, DEFAULT_FILTERS, PAGE_SIZE, TOAST_MS, STORE_KEY, SUBS_KEY, RUNTIME_MAX, inTab } from './constants.js';
+import CountryToggle from './CountryToggle.jsx';
+import { TABS, DEFAULT_FILTERS, PAGE_SIZE, TOAST_MS, STORE_KEY, SUBS_KEY, COUNTRY_KEY, RUNTIME_MAX, inTab } from './constants.js';
 
 /* Removal is an exclusion list, never a delete: the dataset is regenerated from
    the IMDb datasets, so a deleted row would reappear on the next build. */
@@ -31,6 +32,15 @@ export default function App() {
   const [excluded, setExcluded] = useState(loadExcluded);
   const [mine, setMine] = useState(loadSubs);
   const [subsOpen, setSubsOpen] = useState(false);
+  // Where he is right now. Availability is computed against this, so switching it
+  // re-colours the whole library instantly — both countries ship with the data.
+  const [country, setCountry] = useState(() => {
+    try { return localStorage.getItem(COUNTRY_KEY) || 'US'; } catch { return 'US'; }
+  });
+  const chooseCountry = useCallback(cc => {
+    setCountry(cc);
+    try { localStorage.setItem(COUNTRY_KEY, cc); } catch { /* private mode */ }
+  }, []);
   const [limit, setLimit] = useState(PAGE_SIZE);
   const [toast, setToast] = useState(null);
   const [shuffle, setShuffle] = useState(null);
@@ -46,6 +56,7 @@ export default function App() {
         // Seed the known subscriptions on a device that has never been set up.
         // Guarded on the key being absent entirely, not empty — clearing every
         // service is a deliberate choice and must not be undone on reload.
+        try { if (localStorage.getItem(COUNTRY_KEY) === null && d.defaultCountry) setCountry(d.defaultCountry); } catch { /* private mode */ }
         const raw = localStorage.getItem(SUBS_KEY);
         if (raw === null && (d.defaultSubs || []).length) {
           const seeded = new Set(d.defaultSubs);
@@ -127,9 +138,11 @@ export default function App() {
       if (filters.maxRuntime < RUNTIME_MAX && !(f.r != null && f.r <= filters.maxRuntime)) return false;
       if (filters.friendOnly && !f.f) return false;
       if (filters.streamingOnly) {
-        if (!f.pv || !f.pv.length) return false;
+        // Availability is per country — the same film passes in one and not the other.
+        const here = (f.av && f.av[country]) || [];
+        if (!here.length) return false;
         // With no subscriptions declared, "streaming" means any service rather than none
-        if (mine.size && !f.pv.some(i => mine.has(data.providers[i]))) return false;
+        if (mine.size && !here.some(i => mine.has(data.providers[i]))) return false;
       }
       if (q && !(f.t.toLowerCase().includes(q) || (f.da || f.d || '').toLowerCase().includes(q))) return false;
       return true;
@@ -143,14 +156,14 @@ export default function App() {
       title: (a, b) => a.t.localeCompare(b.t)
     };
     return rows.sort(by[filters.sort] || by.imdb);
-  }, [data, tab, filters, excluded, mine]);
+  }, [data, tab, filters, excluded, mine, country]);
 
   const providerCounts = useMemo(() => {
     if (!data || !data.providers) return {};
     const out = {};
-    data.films.forEach(f => (f.pv || []).forEach(i => { out[i] = (out[i] || 0) + 1; }));
+    data.films.forEach(f => ((f.av && f.av[country]) || []).forEach(i => { out[i] = (out[i] || 0) + 1; }));
     return out;
-  }, [data]);
+  }, [data, country]);
 
   const toggleSub = useCallback(name => {
     setMine(prev => {
@@ -211,6 +224,13 @@ export default function App() {
         count={visible.length} onShuffle={roll} hasProviders={!!(data.providers || []).length}
         mineCount={mine.size} onNeedServices={() => setSubsOpen(true)} />
 
+      <CountryToggle
+        countries={data.homeCountries || []}
+        value={country}
+        onChange={chooseCountry}
+        counts={(data.counts && data.counts.byCountry) || {}}
+      />
+
       <Subscriptions
         providers={data.providers || []}
         counts={providerCounts}
@@ -233,7 +253,7 @@ export default function App() {
             {visible.slice(0, limit).map(f => (
               <FilmCard key={f.k} film={f} removed={excluded.has(f.k)}
                 onRemove={remove} onRestore={restore}
-                providers={data.providers || []} mine={mine} />
+                providers={data.providers || []} mine={mine} country={country} />
             ))}
           </div>
           <div ref={sentinel} className="sentinel">
@@ -252,7 +272,7 @@ export default function App() {
       {shuffle ? (
         <ShufflePanel pick={shuffle.pick} total={visible.length}
           onRoll={roll} onClose={() => setShuffle(null)}
-          providers={data.providers || []} mine={mine} />
+          providers={data.providers || []} mine={mine} country={country} />
       ) : null}
 
       {/* Required attribution for the TMDB and OMDb data */}

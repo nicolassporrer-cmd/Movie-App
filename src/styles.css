@@ -217,3 +217,16 @@ input[type="range"] { width: 118px; accent-color: var(--acc); }
   color: var(--vpn); font-weight: 700; display: inline-block;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%;
 }
+
+/* Country switch — where he is right now, which decides green vs pink. */
+.country { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: -4px 0 12px; }
+.country-label { font-size: 12.5px; color: var(--mut); }
+.country-btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 6px 13px; border: 1px solid var(--bd); border-radius: 99px;
+  background: var(--card); color: var(--mut); font: inherit; font-size: 13px;
+  font-weight: 600; cursor: pointer;
+}
+.country-btn.on { border-color: var(--acc); color: var(--acc); }
+.country-btn .flag { font-size: 15px; line-height: 1; }
+.country-count { font-size: 11px; font-weight: 500; opacity: .7; }

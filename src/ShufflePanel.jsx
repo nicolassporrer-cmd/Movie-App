@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { RT_FRESH, countryName } from './constants.js';
 
-export default function ShufflePanel({ pick, total, onRoll, onClose, providers = [], mine = new Set() }) {
+export default function ShufflePanel({ pick, total, onRoll, onClose, providers = [], mine = new Set(), country = 'US' }) {
   useEffect(() => {
     const onKey = e => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', onKey);
@@ -36,15 +36,16 @@ export default function ShufflePanel({ pick, total, onRoll, onClose, providers =
                     : null}
                 </p>
                 {(() => {
-                  const on = (pick.pv || []).map(i => providers[i]).filter(Boolean);
+                  const on = ((pick.av && pick.av[country]) || []).map(i => providers[i]).filter(Boolean);
+                  const alt = pick.alt && pick.alt[country];
                   const subscribed = on.filter(n => mine.has(n));
                   if (subscribed.length) return <p className="panel-watch on-mine">▶ Watch now on {subscribed.join(', ')}</p>;
                   /* The VPN case was added to the cards but not here, so the shuffle
                      could only ever say green or grey — and 888 films are pink. */
-                  if (pick.alt && mine.has(providers[pick.alt[0]])) {
+                  if (alt && mine.has(providers[alt[0]])) {
                     return (
                       <p className="panel-watch on-vpn">
-                        ⇄ On your {providers[pick.alt[0]]} in {countryName(pick.alt[1])} &mdash; needs the VPN
+                        ⇄ On your {providers[alt[0]]} in {countryName(alt[1])} &mdash; needs the VPN
                       </p>
                     );
                   }

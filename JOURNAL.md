@@ -46,6 +46,38 @@ Decisions that would be expensive or dangerous to get wrong on a rebuild.
 
 ## Entries
 
+### 2026-08-27 #15 — Removed superseded data files and the mockup generator
+
+**Branch:** `main` · **Status:** shipped
+
+**What was deleted, and what each thing was**
+
+| File | What it did | Superseded by |
+|---|---|---|
+| `data/providers-us.json` (304 KB) | US streaming availability, fetched per region | `providers-world.json` — one call returns all 48 countries |
+| `data/providers-fr.json` (262 KB) | France, fetched in a second pass purely for Canal+ | same |
+| `data/top50-directors.json` (3 KB) | The 50 directors scraped from IMDb list `ls071439230` | `directors.json` — after 5 removals and 14 additions it was no longer the top 50, and the name lied |
+| `data/films.json` (293 KB) | Film list emitted by the mockup generator | `public/data/films.json`, written by `build-data.cjs` |
+| `scripts/build-mockup.cjs` (~30 KB) | Generated the standalone HTML mockup used for `/plan` before the React app existed | The app itself, entry #9 |
+
+About 890 KB, referenced by nothing since entry #13.
+
+**Why**
+- Dead files are not free. They read as live, so a future session — mine included — would have to prove they were unused before touching anything nearby. `providers-us.json` and `providers-world.json` sitting side by side is exactly the kind of ambiguity that causes someone to update the wrong one.
+- The reasoning behind each was already recorded (#3, #8, #9, #13); only the removal was missing, which is what this entry adds.
+
+**Rejected**
+- **Keeping them as a fallback.** They are regenerable — `enrich-tmdb.cjs` rebuilds availability from scratch in about six minutes — and git holds every version anyway. A stale cache kept "just in case" is a trap, not a backup.
+- **Deleting without recording it.** The user's condition was that the journal explain them first. It covered the reasoning but not the deletion, so the entry came first and the `rm` second.
+
+**Verification**
+`grep` across `scripts/`, `src/` and `.github/` found no references. The pipeline and build were run afterwards to confirm nothing depended on them.
+
+**Files touched**
+- Deleted the five above; `scripts/serve.cjs` kept — still used to check a build locally.
+
+---
+
 ### 2026-08-21 #14 — The deploy published the wrong commit; Wim Wenders; monitoring rewritten
 
 **Branch:** `main` · **Status:** shipped

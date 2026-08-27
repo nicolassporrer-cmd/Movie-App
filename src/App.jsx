@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import FilmCard from './FilmCard.jsx';
 import Filters from './Filters.jsx';
-import ShufflePanel from './ShufflePanel.jsx';
+import FilmPanel from './FilmPanel.jsx';
 import Subscriptions from './Subscriptions.jsx';
 import CountryToggle from './CountryToggle.jsx';
 import { TABS, DEFAULT_FILTERS, PAGE_SIZE, TOAST_MS, STORE_KEY, SUBS_KEY, COUNTRY_KEY, RUNTIME_MAX, inTab } from './constants.js';
@@ -43,7 +43,7 @@ export default function App() {
   }, []);
   const [limit, setLimit] = useState(PAGE_SIZE);
   const [toast, setToast] = useState(null);
-  const [shuffle, setShuffle] = useState(null);
+  const [panel, setPanel] = useState(null);   // { film, fromDice }
   const undoRef = useRef(null);
   const timerRef = useRef(null);
   const sentinel = useRef(null);
@@ -188,9 +188,12 @@ export default function App() {
   }, [visible.length]);
 
   const roll = useCallback(() => {
-    if (!visible.length) { setShuffle({ pick: null }); return; }
-    setShuffle({ pick: visible[Math.floor(Math.random() * visible.length)] });
+    if (!visible.length) { setPanel({ film: null, fromDice: true }); return; }
+    setPanel({ film: visible[Math.floor(Math.random() * visible.length)], fromDice: true });
   }, [visible]);
+
+  // Clicking a card opens the same panel, minus the dice framing
+  const openFilm = useCallback(film => setPanel({ film, fromDice: false }), []);
 
   if (error) return <div className="wrap"><h1>Movies</h1><p className="err">Could not load the film data: {error}</p></div>;
   if (!data) return <div className="wrap"><h1>Movies</h1><p className="loading">Loading the library…</p></div>;
@@ -252,7 +255,7 @@ export default function App() {
           <div className="grid">
             {visible.slice(0, limit).map(f => (
               <FilmCard key={f.k} film={f} removed={excluded.has(f.k)}
-                onRemove={remove} onRestore={restore}
+                onRemove={remove} onRestore={restore} onOpen={openFilm}
                 providers={data.providers || []} mine={mine} country={country} />
             ))}
           </div>
@@ -269,9 +272,9 @@ export default function App() {
         </div>
       ) : null}
 
-      {shuffle ? (
-        <ShufflePanel pick={shuffle.pick} total={visible.length}
-          onRoll={roll} onClose={() => setShuffle(null)}
+      {panel ? (
+        <FilmPanel film={panel.film} total={visible.length}
+          onRoll={panel.fromDice ? roll : null} onClose={() => setPanel(null)}
           providers={data.providers || []} mine={mine} country={country} />
       ) : null}
 

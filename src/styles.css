@@ -230,3 +230,21 @@ input[type="range"] { width: 118px; accent-color: var(--acc); }
 .country-btn.on { border-color: var(--acc); color: var(--acc); }
 .country-btn .flag { font-size: 15px; line-height: 1; }
 .country-count { font-size: 11px; font-weight: 500; opacity: .7; }
+
+/* Cards are clickable now — make that legible without shouting */
+.card { cursor: pointer; transition: border-color .12s, transform .12s; }
+.card:hover { border-color: var(--mut); }
+.card:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
+.card .remove, .card .restore, .card .where { cursor: pointer; }
+
+/* Detail panel */
+.panel-main { flex: 1; min-width: 0; }
+.panel-synopsis {
+  margin: 0 0 10px; font-size: 13.5px; line-height: 1.5; color: var(--fg);
+}
+.panel-you { margin: 8px 0 0; font-size: 13px; }
+.panel-scores .mc { color: var(--mut); font-weight: 600; }
+@media (max-width: 560px) {
+  .panel-row { flex-direction: column; }
+  .panel-poster { width: 100px; }
+}

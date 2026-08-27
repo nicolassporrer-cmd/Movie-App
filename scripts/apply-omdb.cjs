@@ -16,13 +16,14 @@ if (!fs.existsSync(CACHE)) { console.error('No OMDb cache at ' + CACHE); process
 const payload = JSON.parse(fs.readFileSync(FILMS, 'utf8'));
 const cache = JSON.parse(fs.readFileSync(CACHE, 'utf8'));
 
-let addedRt = 0, addedMc = 0, addedPoster = 0, unchanged = 0;
+let addedRt = 0, addedMc = 0, addedPoster = 0, addedPlot = 0, unchanged = 0;
 payload.films.forEach(f => {
   const o = cache[f.k];
   if (!o || o.error) { unchanged++; return; }
   if (o.rt != null && f.rt !== o.rt) { f.rt = o.rt; addedRt++; }
   if (o.meta != null && f.mc !== o.meta) { f.mc = o.meta; addedMc++; }
   if (o.poster && f.p !== o.poster) { f.p = o.poster; addedPoster++; }
+  if (o.plot && f.sy !== o.plot) { f.sy = o.plot; addedPlot++; }
 });
 
 payload.counts.withRt = payload.films.filter(f => f.rt != null).length;
@@ -34,6 +35,7 @@ payload.builtAt = d.getUTCFullYear() + '-' + pad(d.getUTCMonth() + 1) + '-' + pa
 
 fs.writeFileSync(FILMS, JSON.stringify(payload));
 console.log('films:', payload.films.length, '| cache entries:', Object.keys(cache).length);
-console.log('newly set — RT:', addedRt, 'Metacritic:', addedMc, 'posters:', addedPoster);
+console.log('newly set — RT:', addedRt, 'Metacritic:', addedMc, 'posters:', addedPoster, 'synopses:', addedPlot);
 console.log('totals now — with RT:', payload.counts.withRt, '| with poster:', payload.counts.withPoster);
 console.log('films still without an RT score:', payload.films.filter(f => f.rt == null).length);
+console.log('films with a synopsis:', payload.films.filter(f => f.sy).length, 'of', payload.films.length);

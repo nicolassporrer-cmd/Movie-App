@@ -52,7 +52,7 @@ const scores = r => {
 };
 
 async function fetchOne(id) {
-  const url = 'https://www.omdbapi.com/?apikey=' + encodeURIComponent(KEY) + '&i=' + encodeURIComponent(id) + '&tomatoes=true';
+  const url = 'https://www.omdbapi.com/?apikey=' + encodeURIComponent(KEY) + '&i=' + encodeURIComponent(id) + '&tomatoes=true&plot=short';
   const res = await fetch(url);
   if (!res.ok) throw new Error('HTTP ' + res.status);
   const j = await res.json();
@@ -78,7 +78,16 @@ async function fetchOne(id) {
   // --only lets a newly added film be enriched immediately, instead of waiting for
   // the nightly batch to reach it by vote count.
   const only = val('--only', null);
-  let todo = withId.filter(f => !cache[f.k]);
+  /* An entry cached before synopses existed has no `plot` key at all, so it needs
+     refetching. After a successful fetch `plot` is always set — to the text, or to
+     null when OMDb has none — which keeps "never asked" distinct from "asked, nothing
+     there" and stops films without a synopsis being retried every night forever. */
+  let todo = withId.filter(f => {
+    const c = cache[f.k];
+    if (!c) return true;
+    if (c.error) return false;
+    return c.plot === undefined;
+  });
   if (only) {
     const wanted = new Set(only.split(',').map(s => s.trim()));
     todo = withId.filter(f => wanted.has(f.k));
@@ -104,7 +113,8 @@ async function fetchOne(id) {
       const s = scores(j);
       cache[f.k] = {
         title: j.Title, year: j.Year, imdb: s.imdb, rt: s.rt, meta: s.meta,
-        poster: j.Poster && j.Poster !== 'N/A' ? j.Poster : null
+        poster: j.Poster && j.Poster !== 'N/A' ? j.Poster : null,
+        plot: j.Plot && j.Plot !== 'N/A' ? j.Plot.trim() : null
       };
       ok++;
     } catch (e) {
@@ -122,6 +132,15 @@ async function fetchOne(id) {
   fs.writeFileSync(CACHE, JSON.stringify(cache));
   const done = Object.values(cache);
   console.log('\nfetched ok:', ok, '| failed:', fail, quota ? '| stopped on quota' : '');
-  console.log('cache holds:', done.length, '| with RT:', done.filter(d => d.rt != null).length, '| with poster:', done.filter(d => d.poster).length);
-  console.log('remaining:', withId.filter(f => !cache[f.k]).length);
+  console.log('cache holds:', done.length, '| with RT:', done.filter(d => d.rt != null).length, '| with poster:', done.filter(d => d.poster).length, '| with a synopsis:', done.filter(d => d.plot).length);
+  /* Must use the same predicate as `todo`, not "missing from the cache". Once every
+     film was cached that read 0 while 1,331 still needed a synopsis — a progress
+     figure that says "done" mid-backfill is worse than none. */
+  const stillTodo = withId.filter(f => {
+    const c = cache[f.k];
+    if (!c) return true;
+    if (c.error) return false;
+    return c.plot === undefined;
+  }).length;
+  console.log('remaining to fetch:', stillTodo, stillTodo ? '(~' + Math.ceil(stillTodo / 900) + ' more night(s) at 900/day)' : '');
 })();

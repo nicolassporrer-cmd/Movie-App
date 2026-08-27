@@ -2,7 +2,7 @@ import { RT_FRESH, TMDB_WATCH_URL, countryName } from './constants.js';
 
 // Module level, never nested in another render — a nested component remounts on
 // every keystroke and destroys focus and state.
-export default function FilmCard({ film, removed, onRemove, onRestore, providers, mine, country }) {
+export default function FilmCard({ film, removed, onRemove, onRestore, onOpen, providers, mine, country }) {
   const stars = v => v == null ? null : '★'.repeat(Math.floor(v)) + (v % 1 ? '½' : '');
   // Availability depends on where he is: the same film is green in one country,
   // pink in the other, grey in neither.
@@ -12,8 +12,26 @@ export default function FilmCard({ film, removed, onRemove, onRestore, providers
   const subscribed = on.filter(n => mine.has(n));
   const others = on.filter(n => !mine.has(n));
 
+  /* The whole card opens the panel, but the remove/restore buttons and the
+     where-to-watch link sit inside it — without this guard, removing a film would
+     also pop the panel open over the toast. */
+  const open = e => {
+    if (e.target.closest('button, a')) return;
+    onOpen && onOpen(film);
+  };
+  const keyOpen = e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen && onOpen(film); }
+  };
+
   return (
-    <article className={'card' + (removed ? ' gone' : '')}>
+    <article
+      className={'card' + (removed ? ' gone' : '')}
+      onClick={open}
+      onKeyDown={keyOpen}
+      tabIndex={0}
+      role="button"
+      aria-label={'Details for ' + film.t}
+    >
       <div className="poster">
         {film.p
           ? <img loading="lazy" src={film.p} alt="" />

@@ -174,6 +174,7 @@ function rss(u) {
       if (o.rt != null) { f.rt = o.rt; rtN++; }
       if (o.meta != null) f.mc = o.meta;
       if (o.poster) { f.p = o.poster; }
+      if (o.plot) { f.sy = o.plot; }   // one-sentence synopsis, OMDb plot=short
     }
     if (f.p) posterN++;
   });

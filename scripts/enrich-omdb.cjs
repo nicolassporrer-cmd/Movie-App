@@ -118,9 +118,14 @@ async function fetchOne(id) {
       };
       ok++;
     } catch (e) {
-      // A daily-quota rejection means stop — not "mark every remaining film broken",
-      // which would poison the cache and permanently skip those films.
-      if (/limit|quota/i.test(e.message)) { console.log('  quota reached after ' + i + ' — stopping'); quota = true; break; }
+      /* Stop on anything transient rather than recording it as a permanent error.
+         OMDb answers an exhausted daily quota with **HTTP 401**, not a worded
+         message, so matching only /limit|quota/ let 17 films be cached as failed
+         and skipped forever. Network blips are equally not the film's fault. */
+      if (/limit|quota|401|429|fetch failed|ECONN|ETIMEDOUT|socket/i.test(e.message)) {
+        console.log('  transient failure after ' + i + ' (' + e.message + ') — stopping, nothing cached for it');
+        quota = true; break;
+      }
       cache[f.k] = { error: e.message };
       fail++;
     }

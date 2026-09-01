@@ -42,6 +42,7 @@ Decisions that would be expensive or dangerous to get wrong on a rebuild.
 | 15 | **OMDb is the only external key needed** — it returns RT, Metacritic *and* a hotlinkable poster URL | Verified by probe; removes the TMDB dependency entirely | 2026-08-19 #6 |
 | 16 | Never source images by web-image search | Returns whatever ranks rather than the verified film, so errors are undetectable at scale | 2026-08-19 #6 |
 | 17 | A popover must be re-tested at phone width; resetting its *container* to `position: static` does not un-float the panel | The absolutely-positioned element is the one that overlays content — the genre panel sat on top of the film grid on mobile while looking correct on desktop | 2026-09-01 #16 |
+| 18 | A shared component class must declare `flex-direction` explicitly when it can render inside `.filters` | `.filters label` sets `column` and outranks a bare `.chip`, so every filter-bar chip silently stacked its checkbox, name and count for weeks | 2026-09-01 #16 |
 
 ---
 
@@ -89,6 +90,25 @@ the button, pushes the grid down, and scrolls internally.
 | Closing the panel | grid moves back up 381px, selection retained |
 | Horizontal scroll | none |
 | Desktop at 1280px | still `absolute`, 320px, no internal scroll — unchanged |
+
+**Follow-up the same day: one genre per line**
+
+Wrapped pills were hard to scan — the names start at a different x on every row.
+The list is now vertical: one full-width row per genre, checkbox on a fixed left
+edge, count flush right, 23 rows scrolling inside the panel (`max-height:
+min(62vh, 520px)` on desktop, 46vh on mobile).
+
+Doing this surfaced a **pre-existing bug in the shared `.chip` rule**. `.filters
+label` sets `flex-direction: column` and outranks a bare `.chip` — (0,1,1) beats
+(0,1,0) — so every chip in the filter bar had been stacking its checkbox, name
+and count vertically: 90px-tall rows instead of 38. It hit the subscriptions
+picker too, and had been live since that picker shipped. It went unreported
+because a column of tall pills still looks deliberate. Fixed by declaring
+`flex-direction: row` explicitly on `.genrep-list .chip, .subs-list .chip`.
+
+Verified: genre rows 38–39px, one per line, checkbox at x+5, count 5px off the
+right edge; subscription pills back to 31px wrapping horizontally; 2,522 still
+correct; desktop popover unchanged at 320px, now scrolling internally.
 ### 2026-08-27 #15 — Removed superseded data files and the mockup generator
 
 **Branch:** `main` · **Status:** shipped

@@ -263,9 +263,29 @@ input[type="range"] { width: 118px; accent-color: var(--acc); }
   min-width: 320px; max-width: min(560px, calc(100vw - 32px));
   padding: 13px 14px; background: var(--card);
   border: 1px solid var(--bd); border-radius: 10px; box-shadow: 0 8px 28px #0003;
+  /* 23 rows stacked vertically would otherwise run off the bottom of the screen. */
+  max-height: min(62vh, 520px); overflow-y: auto;
 }
 .genrep-help { margin: 0 0 10px; font-size: 12.5px; color: var(--mut); line-height: 1.5; }
-.genrep-list { display: flex; flex-wrap: wrap; gap: 7px; }
+/* One genre per line. Wrapped pills were hard to scan and easy to mis-tap: the
+   names start at a different x on every row. A vertical list gives each genre a
+   full-width row with the checkbox on a fixed left edge and the count flush
+   right, so the eye runs straight down. Scoped to the genre panel — the
+   subscriptions picker keeps its pills. */
+.genrep-list { display: flex; flex-direction: column; flex-wrap: nowrap; gap: 0; }
+/* flex-direction is explicit because `.filters label` sets `column` and outranks a
+   bare `.chip` — without it every chip stacks its checkbox, name and count. */
+.genrep-list .chip, .subs-list .chip { flex-direction: row; align-items: center; }
+.genrep-list .chip {
+  display: flex; width: 100%; gap: 10px; align-items: center;
+  padding: 9px 5px; border: 0; border-bottom: 1px solid var(--bd);
+  border-radius: 0; font-size: 13.5px; color: var(--fg);
+}
+.genrep-list .chip:last-child { border-bottom: 0; }
+.genrep-list .chip:hover { border-color: transparent; border-bottom-color: var(--bd); background: var(--bg); }
+.genrep-list .chip:last-child:hover { border-bottom-color: transparent; }
+.genrep-list .chip.on { border-bottom-color: var(--bd); color: var(--acc); }
+.genrep-list .chip-count { margin-left: auto; font-size: 12px; }
 /* On a phone the popover overlaid the film grid, which read as broken. Put the
    panel in the normal flow instead: it opens directly under the button, takes the
    full width of the filter bar, pushes everything below it down, and scrolls

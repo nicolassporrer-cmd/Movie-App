@@ -248,3 +248,25 @@ input[type="range"] { width: 118px; accent-color: var(--acc); }
   .panel-row { flex-direction: column; }
   .panel-poster { width: 100px; }
 }
+
+/* Genre multi-select — same chip language as the subscription picker */
+.genrep { position: relative; }
+.genrep-toggle {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 6px 12px; border: 1px solid var(--bd); border-radius: 8px;
+  background: var(--bg); color: var(--fg); font: inherit; font-size: 13px;
+  font-weight: 600; cursor: pointer;
+}
+.genrep-toggle.on { border-color: var(--acc); color: var(--acc); }
+.genrep-panel {
+  position: absolute; z-index: 12; top: calc(100% + 6px); left: 0;
+  min-width: 320px; max-width: min(560px, calc(100vw - 32px));
+  padding: 13px 14px; background: var(--card);
+  border: 1px solid var(--bd); border-radius: 10px; box-shadow: 0 8px 28px #0003;
+}
+.genrep-help { margin: 0 0 10px; font-size: 12.5px; color: var(--mut); line-height: 1.5; }
+.genrep-list { display: flex; flex-wrap: wrap; gap: 7px; }
+@media (max-width: 560px) {
+  .genrep { position: static; }
+  .genrep-panel { left: 0; right: 0; min-width: 0; }
+}

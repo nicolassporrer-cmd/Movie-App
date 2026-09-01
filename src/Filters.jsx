@@ -1,6 +1,7 @@
 import { SORTS, RUNTIME_MAX } from './constants.js';
+import GenrePicker from './GenrePicker.jsx';
 
-export default function Filters({ data, filters, setFilters, count, onShuffle, hasProviders, mineCount, onNeedServices }) {
+export default function Filters({ data, filters, setFilters, count, onShuffle, hasProviders, mineCount, onNeedServices, genreCounts, genreOpen, setGenreOpen }) {
   const set = (key, value) => setFilters(f => ({ ...f, [key]: value }));
 
   return (
@@ -13,12 +14,18 @@ export default function Filters({ data, filters, setFilters, count, onShuffle, h
         onChange={e => set('query', e.target.value)}
       />
 
-      <label>Genre
-        <select value={filters.genre} onChange={e => set('genre', e.target.value)}>
-          <option value="">All</option>
-          {data.genres.map(g => <option key={g}>{g}</option>)}
-        </select>
-      </label>
+      <GenrePicker
+        genres={data.genres}
+        counts={genreCounts}
+        selected={new Set(filters.genres)}
+        onToggle={g => setFilters(prev => ({
+          ...prev,
+          genres: prev.genres.includes(g) ? prev.genres.filter(x => x !== g) : [...prev.genres, g]
+        }))}
+        onClear={() => set('genres', [])}
+        open={genreOpen}
+        setOpen={setGenreOpen}
+      />
 
       <label>Director
         <select value={filters.director} onChange={e => set('director', e.target.value)}>

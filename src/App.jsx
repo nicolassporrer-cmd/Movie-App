@@ -32,6 +32,7 @@ export default function App() {
   const [excluded, setExcluded] = useState(loadExcluded);
   const [mine, setMine] = useState(loadSubs);
   const [subsOpen, setSubsOpen] = useState(false);
+  const [genreOpen, setGenreOpen] = useState(false);
   // Where he is right now. Availability is computed against this, so switching it
   // re-colours the whole library instantly — both countries ship with the data.
   const [country, setCountry] = useState(() => {
@@ -130,7 +131,8 @@ export default function App() {
     const rows = data.films.filter(f => {
       const gone = excluded.has(f.k);
       if (!inTab(f, tab, gone)) return false;
-      if (filters.genre && !f.g.includes(filters.genre)) return false;
+      // Union, not intersection: any one of the ticked genres qualifies.
+      if (filters.genres.length && !f.g.some(g => filters.genres.includes(g))) return false;
       // match against the full credit list (da) where one exists, not the truncated display
       if (filters.director && !((f.da || f.d || '').includes(filters.director))) return false;
       if (filters.minImdb > 0 && !(f.i != null && f.i >= filters.minImdb)) return false;
@@ -157,6 +159,13 @@ export default function App() {
     };
     return rows.sort(by[filters.sort] || by.imdb);
   }, [data, tab, filters, excluded, mine, country]);
+
+  const genreCounts = useMemo(() => {
+    if (!data) return {};
+    const out = {};
+    data.films.forEach(f => (f.g || []).forEach(g => { out[g] = (out[g] || 0) + 1; }));
+    return out;
+  }, [data]);
 
   const providerCounts = useMemo(() => {
     if (!data || !data.providers) return {};
@@ -225,7 +234,8 @@ export default function App() {
 
       <Filters data={data} filters={filters} setFilters={setFilters}
         count={visible.length} onShuffle={roll} hasProviders={!!(data.providers || []).length}
-        mineCount={mine.size} onNeedServices={() => setSubsOpen(true)} />
+        mineCount={mine.size} onNeedServices={() => setSubsOpen(true)}
+        genreCounts={genreCounts} genreOpen={genreOpen} setGenreOpen={setGenreOpen} />
 
       <CountryToggle
         countries={data.homeCountries || []}

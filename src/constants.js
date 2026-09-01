@@ -52,7 +52,7 @@ export const RT_FRESH = 60;           // at or above this an RT score reads as f
 export const STORE_KEY = 'movieapp.excluded.v1';
 
 export const DEFAULT_FILTERS = {
-  genre: '',
+  genres: [],   // union: a film matching ANY selected genre is shown
   director: '',
   minImdb: 0,
   minRt: 0,

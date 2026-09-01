@@ -55,7 +55,7 @@
  },
  {
   "id": "nm0001425",
-  "name": "Krzysztof Kieslowski",
+  "name": "Krzysztof Kieślowski",
   "source": "imdb-top50",
   "rank": 12
  },
@@ -133,7 +133,7 @@
  },
  {
   "id": "nm0190859",
-  "name": "Alfonso Cuaron",
+  "name": "Alfonso Cuarón",
   "source": "imdb-top50",
   "rank": 26
  },
@@ -175,7 +175,7 @@
  },
  {
   "id": "nm0001232",
-  "name": "Milos Forman",
+  "name": "Miloš Forman",
   "source": "imdb-top50",
   "rank": 34
  },
@@ -199,7 +199,7 @@
  },
  {
   "id": "nm0327944",
-  "name": "Alejandro G. Inarritu",
+  "name": "Alejandro G. Iñárritu",
   "source": "imdb-top50",
   "rank": 38
  },
@@ -358,5 +358,197 @@
   "id": "nm0619923",
   "name": "Olivier Nakache",
   "source": "added"
+ },
+ {
+  "id": "nm0654868",
+  "name": "Yasujirō Ozu",
+  "source": "added",
+  "country": "Japan"
+ },
+ {
+  "id": "nm0003226",
+  "name": "Kenji Mizoguchi",
+  "source": "added",
+  "country": "Japan"
+ },
+ {
+  "id": "nm0466153",
+  "name": "Hirokazu Koreeda",
+  "source": "added",
+  "country": "Japan"
+ },
+ {
+  "id": "nm0651915",
+  "name": "Nagisa Ōshima",
+  "source": "added",
+  "country": "Japan"
+ },
+ {
+  "id": "nm0408076",
+  "name": "Shōhei Imamura",
+  "source": "added",
+  "country": "Japan"
+ },
+ {
+  "id": "nm0001429",
+  "name": "Takeshi Kitano",
+  "source": "added",
+  "country": "Japan"
+ },
+ {
+  "id": "nm0464804",
+  "name": "Satoshi Kon",
+  "source": "added",
+  "country": "Japan"
+ },
+ {
+  "id": "nm3152327",
+  "name": "Ryūsuke Hamaguchi",
+  "source": "added",
+  "country": "Japan"
+ },
+ {
+  "id": "nm0094435",
+  "name": "Bong Joon Ho",
+  "source": "added",
+  "country": "Korea"
+ },
+ {
+  "id": "nm0661791",
+  "name": "Park Chan-wook",
+  "source": "added",
+  "country": "Korea"
+ },
+ {
+  "id": "nm1104118",
+  "name": "Kim Ki-duk",
+  "source": "added",
+  "country": "Korea"
+ },
+ {
+  "id": "nm0393254",
+  "name": "Hong Sang-soo",
+  "source": "added",
+  "country": "Korea"
+ },
+ {
+  "id": "nm0407990",
+  "name": "Im Kwon-taek",
+  "source": "added",
+  "country": "Korea"
+ },
+ {
+  "id": "nm0453518",
+  "name": "Kim Jee-woon",
+  "source": "added",
+  "country": "Korea"
+ },
+ {
+  "id": "nm2947553",
+  "name": "Na Hong-jin",
+  "source": "added",
+  "country": "Korea"
+ },
+ {
+  "id": "nm3613566",
+  "name": "Yeon Sang-ho",
+  "source": "added",
+  "country": "Korea"
+ },
+ {
+  "id": "nm0753423",
+  "name": "Ryoo Seung-wan",
+  "source": "added",
+  "country": "Korea"
+ },
+ {
+  "id": "nm0000487",
+  "name": "Ang Lee",
+  "source": "added",
+  "country": "China"
+ },
+ {
+  "id": "nm0002254",
+  "name": "King Hu",
+  "source": "added",
+  "country": "China"
+ },
+ {
+  "id": "nm0000247",
+  "name": "John Woo",
+  "source": "added",
+  "country": "China"
+ },
+ {
+  "id": "nm0401176",
+  "name": "Ann Hui",
+  "source": "added",
+  "country": "China"
+ },
+ {
+  "id": "nm0000774",
+  "name": "Michelangelo Antonioni",
+  "source": "added",
+  "country": "Italy"
+ },
+ {
+  "id": "nm0001120",
+  "name": "Vittorio De Sica",
+  "source": "added",
+  "country": "Italy"
+ },
+ {
+  "id": "nm0744023",
+  "name": "Roberto Rossellini",
+  "source": "added",
+  "country": "Italy"
+ },
+ {
+  "id": "nm0001596",
+  "name": "Pier Paolo Pasolini",
+  "source": "added",
+  "country": "Italy"
+ },
+ {
+  "id": "nm0778633",
+  "name": "Ettore Scola",
+  "source": "added",
+  "country": "Italy"
+ },
+ {
+  "id": "nm0000934",
+  "name": "Bernardo Bertolucci",
+  "source": "added",
+  "country": "Italy"
+ },
+ {
+  "id": "nm0815204",
+  "name": "Paolo Sorrentino",
+  "source": "added",
+  "country": "Italy"
+ },
+ {
+  "id": "nm0396284",
+  "name": "Hsiao-Hsien Hou",
+  "source": "added",
+  "country": "China"
+ },
+ {
+  "id": "nm0955443",
+  "name": "Yimou Zhang",
+  "source": "added",
+  "country": "China"
+ },
+ {
+  "id": "nm0155280",
+  "name": "Kaige Chen",
+  "source": "added",
+  "country": "China"
+ },
+ {
+  "id": "nm0422605",
+  "name": "Zhangke Jia",
+  "source": "added",
+  "country": "China"
  }
 ]

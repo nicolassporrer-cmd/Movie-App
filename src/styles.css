@@ -266,7 +266,22 @@ input[type="range"] { width: 118px; accent-color: var(--acc); }
 }
 .genrep-help { margin: 0 0 10px; font-size: 12.5px; color: var(--mut); line-height: 1.5; }
 .genrep-list { display: flex; flex-wrap: wrap; gap: 7px; }
+/* On a phone the popover overlaid the film grid, which read as broken. Put the
+   panel in the normal flow instead: it opens directly under the button, takes the
+   full width of the filter bar, pushes everything below it down, and scrolls
+   internally rather than running off the screen. */
 @media (max-width: 560px) {
-  .genrep { position: static; }
-  .genrep-panel { left: 0; right: 0; min-width: 0; }
+  .genrep { position: static; display: block; width: 100%; }
+  .genrep-toggle { width: 100%; justify-content: space-between; }
+  .genrep-panel {
+    position: static;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    margin-top: 8px;
+    max-height: 46vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    box-shadow: none;
+  }
 }

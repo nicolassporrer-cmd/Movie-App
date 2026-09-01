@@ -41,11 +41,54 @@ Decisions that would be expensive or dangerous to get wrong on a rebuild.
 | 14 | Any count shown next to a runtime-mutable collection must be computed client-side | Build-time counts go stale the instant something can be removed | 2026-08-19 #5 |
 | 15 | **OMDb is the only external key needed** — it returns RT, Metacritic *and* a hotlinkable poster URL | Verified by probe; removes the TMDB dependency entirely | 2026-08-19 #6 |
 | 16 | Never source images by web-image search | Returns whatever ranks rather than the verified film, so errors are undetectable at scale | 2026-08-19 #6 |
+| 17 | A popover must be re-tested at phone width; resetting its *container* to `position: static` does not un-float the panel | The absolutely-positioned element is the one that overlays content — the genre panel sat on top of the film grid on mobile while looking correct on desktop | 2026-09-01 #16 |
 
 ---
 
 ## Entries
 
+### 2026-09-01 #16 — Multi-select genre filter, and the mobile panel that overlaid the grid
+
+**Branch:** `main` · **Status:** shipped
+
+**What changed**
+
+The single-choice genre `<select>` became a picker of 23 tickable chips, each labelled
+with the number of films it holds. Matching is a **union**: Crime + Thriller + Drama
+returns the 2,522 films in any of the three. Intersection was considered and rejected —
+barely a handful of films carry three specific genres at once, so an intersecting filter
+would return a near-empty list and read as broken rather than precise.
+
+- `src/GenrePicker.jsx` — new component, 23 chips with counts
+- `src/constants.js` — `DEFAULT_FILTERS.genre: ''` → `genres: []`
+- `src/App.jsx` — `f.g.some(g => filters.genres.includes(g))`, plus a `genreCounts` memo
+- `src/Filters.jsx` — `<select>` replaced by `<GenrePicker>`
+- `src/styles.css` — `.genrep-*`, styled to match the subscriptions picker
+
+**The bug that shipped with it**
+
+The panel was `position: absolute` at every width. On desktop that is correct — a popover
+floating over the page. On a 375px phone the same rule made it float **on top of the film
+grid**, which is what the user saw and reported: "it appears weirdly below on top of the
+movies list, it does not work". The earlier mobile media query only reset `.genrep` to
+`position: static` and stretched the panel `left: 0; right: 0` — the panel itself stayed
+absolute, so it still overlaid the grid at full width. Resetting the *container* does
+nothing; the positioned element is the one that has to change.
+
+Fix, under `@media (max-width: 560px)`: the panel becomes `position: static`, full width,
+`max-height: 46vh` with `overflow-y: auto`. It now opens in the normal flow directly under
+the button, pushes the grid down, and scrolls internally.
+
+**Verified** (375×812, real build, not the dev server)
+
+| | |
+|---|---|
+| Panel bottom / first card top | 736 / 1174 — no overlap |
+| Internal scroll | 564px of chips in a 372px box; last chip (Western) reachable |
+| Crime + Thriller + Drama | 2,522 films — matches the figure computed from the dataset |
+| Closing the panel | grid moves back up 381px, selection retained |
+| Horizontal scroll | none |
+| Desktop at 1280px | still `absolute`, 320px, no internal scroll — unchanged |
 ### 2026-08-27 #15 — Removed superseded data files and the mockup generator
 
 **Branch:** `main` · **Status:** shipped

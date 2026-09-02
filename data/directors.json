@@ -1,656 +1,701 @@
 [
- {
-  "id": "nm0634240",
-  "name": "Christopher Nolan",
-  "source": "imdb-top50",
-  "rank": 1
- },
- {
-  "id": "nm0001104",
-  "name": "Frank Darabont",
-  "source": "imdb-top50",
-  "rank": 3
- },
- {
-  "id": "nm0006249",
-  "name": "Satyajit Ray",
-  "source": "imdb-top50",
-  "rank": 4
- },
- {
-  "id": "nm0001789",
-  "name": "Andrei Tarkovsky",
-  "source": "imdb-top50",
-  "rank": 5
- },
- {
-  "id": "nm0000233",
-  "name": "Quentin Tarantino",
-  "source": "imdb-top50",
-  "rank": 6
- },
- {
-  "id": "nm0000040",
-  "name": "Stanley Kubrick",
-  "source": "imdb-top50",
-  "rank": 7
- },
- {
-  "id": "nm0000399",
-  "name": "David Fincher",
-  "source": "imdb-top50",
-  "rank": 9
- },
- {
-  "id": "nm0006498",
-  "name": "Majid Majidi",
-  "source": "imdb-top50",
-  "rank": 10
- },
- {
-  "id": "nm0945981",
-  "name": "Edward Yang",
-  "source": "imdb-top50",
-  "rank": 11
- },
- {
-  "id": "nm0001425",
-  "name": "Krzysztof Kieślowski",
-  "source": "imdb-top50",
-  "rank": 12
- },
- {
-  "id": "nm0001392",
-  "name": "Peter Jackson",
-  "source": "imdb-top50",
-  "rank": 13
- },
- {
-  "id": "nm0005222",
-  "name": "Sam Mendes",
-  "source": "imdb-top50",
-  "rank": 14
- },
- {
-  "id": "nm0000122",
-  "name": "Charles Chaplin",
-  "source": "imdb-top50",
-  "rank": 16
- },
- {
-  "id": "nm0612816",
-  "name": "Cristian Mungiu",
-  "source": "imdb-top50",
-  "rank": 17
- },
- {
-  "id": "nm0899581",
-  "name": "Luchino Visconti",
-  "source": "imdb-top50",
-  "rank": 18
- },
- {
-  "id": "nm1410815",
-  "name": "Asghar Farhadi",
-  "source": "imdb-top50",
-  "rank": 19
- },
- {
-  "id": "nm0000041",
-  "name": "Akira Kurosawa",
-  "source": "imdb-top50",
-  "rank": 20
- },
- {
-  "id": "nm0496969",
-  "name": "Lee Chang-dong",
-  "source": "imdb-top50",
-  "rank": 21
- },
- {
-  "id": "nm0898288",
-  "name": "Denis Villeneuve",
-  "source": "imdb-top50",
-  "rank": 22
- },
- {
-  "id": "nm0149196",
-  "name": "Nuri Bilge Ceylan",
-  "source": "imdb-top50",
-  "rank": 23
- },
- {
-  "id": "nm0000180",
-  "name": "David Lean",
-  "source": "imdb-top50",
-  "rank": 24
- },
- {
-  "id": "nm0027572",
-  "name": "Wes Anderson",
-  "source": "imdb-top50",
-  "rank": 25
- },
- {
-  "id": "nm0190859",
-  "name": "Alfonso Cuarón",
-  "source": "imdb-top50",
-  "rank": 26
- },
- {
-  "id": "nm0000766",
-  "name": "Theodoros Angelopoulos",
-  "source": "imdb-top50",
-  "rank": 27
- },
- {
-  "id": "nm0000116",
-  "name": "James Cameron",
-  "source": "imdb-top50",
-  "rank": 28
- },
- {
-  "id": "nm0000975",
-  "name": "Robert Bresson",
-  "source": "imdb-top50",
-  "rank": 30
- },
- {
-  "id": "nm0001437",
-  "name": "Emir Kusturica",
-  "source": "imdb-top50",
-  "rank": 31
- },
- {
-  "id": "nm0000217",
-  "name": "Martin Scorsese",
-  "source": "imdb-top50",
-  "rank": 32
- },
- {
-  "id": "nm0000186",
-  "name": "David Lynch",
-  "source": "imdb-top50",
-  "rank": 33
- },
- {
-  "id": "nm0001232",
-  "name": "Miloš Forman",
-  "source": "imdb-top50",
-  "rank": 34
- },
- {
-  "id": "nm0000759",
-  "name": "Paul Thomas Anderson",
-  "source": "imdb-top50",
-  "rank": 35
- },
- {
-  "id": "nm0004244",
-  "name": "Jacques Tati",
-  "source": "imdb-top50",
-  "rank": 36
- },
- {
-  "id": "nm0000697",
-  "name": "Billy Wilder",
-  "source": "imdb-top50",
-  "rank": 37
- },
- {
-  "id": "nm0327944",
-  "name": "Alejandro G. Iñárritu",
-  "source": "imdb-top50",
-  "rank": 38
- },
- {
-  "id": "nm0000019",
-  "name": "Federico Fellini",
-  "source": "imdb-top50",
-  "rank": 40
- },
- {
-  "id": "nm0452102",
-  "name": "Abbas Kiarostami",
-  "source": "imdb-top50",
-  "rank": 41
- },
- {
-  "id": "nm0169806",
-  "name": "Taika Waititi",
-  "source": "imdb-top50",
-  "rank": 42
- },
- {
-  "id": "nm0462030",
-  "name": "Masaki Kobayashi",
-  "source": "imdb-top50",
-  "rank": 43
- },
- {
-  "id": "nm0578483",
-  "name": "Jean-Pierre Melville",
-  "source": "imdb-top50",
-  "rank": 44
- },
- {
-  "id": "nm0001466",
-  "name": "Sergio Leone",
-  "source": "imdb-top50",
-  "rank": 45
- },
- {
-  "id": "nm0004716",
-  "name": "Darren Aronofsky",
-  "source": "imdb-top50",
-  "rank": 46
- },
- {
-  "id": "nm0690597",
-  "name": "Gillo Pontecorvo",
-  "source": "imdb-top50",
-  "rank": 47
- },
- {
-  "id": "nm0868153",
-  "name": "Giuseppe Tornatore",
-  "source": "imdb-top50",
-  "rank": 48
- },
- {
-  "id": "nm0939182",
-  "name": "Wong Kar-Wai",
-  "source": "imdb-top50",
-  "rank": 49
- },
- {
-  "id": "nm0000229",
-  "name": "Steven Spielberg",
-  "source": "imdb-top50",
-  "rank": 50
- },
- {
-  "id": "nm0796117",
-  "name": "M. Night Shyamalan",
-  "source": "added"
- },
- {
-  "id": "nm0000033",
-  "name": "Alfred Hitchcock",
-  "source": "added"
- },
- {
-  "id": "nm0001486",
-  "name": "Sidney Lumet",
-  "source": "added"
- },
- {
-  "id": "nm0000005",
-  "name": "Ingmar Bergman",
-  "source": "added"
- },
- {
-  "id": "nm0000080",
-  "name": "Orson Welles",
-  "source": "added"
- },
- {
-  "id": "nm0000361",
-  "name": "Brian De Palma",
-  "source": "added"
- },
- {
-  "id": "nm0000142",
-  "name": "Clint Eastwood",
-  "source": "added"
- },
- {
-  "id": "nm1950086",
-  "name": "Greta Gerwig",
-  "source": "added"
- },
- {
-  "id": "nm0594503",
-  "name": "Hayao Miyazaki",
-  "source": "added"
- },
- {
-  "id": "nm0000095",
-  "name": "Woody Allen",
-  "source": "added"
- },
- {
-  "id": "nm0000517",
-  "name": "Terrence Malick",
-  "source": "added"
- },
- {
-  "id": "nm0001885",
-  "name": "Lars von Trier",
-  "source": "added"
- },
- {
-  "id": "nm1312575",
-  "name": "Olivia Wilde",
-  "source": "added"
- },
- {
-  "id": "nm0230859",
-  "name": "Xavier Dolan",
-  "source": "added"
- },
- {
-  "id": "nm2630323",
-  "name": "Justine Triet",
-  "source": "added"
- },
- {
-  "id": "nm0000694",
-  "name": "Wim Wenders",
-  "source": "added"
- },
- {
-  "id": "nm0865918",
-  "name": "Éric Toledano",
-  "source": "added"
- },
- {
-  "id": "nm0619923",
-  "name": "Olivier Nakache",
-  "source": "added"
- },
- {
-  "id": "nm0654868",
-  "name": "Yasujirō Ozu",
-  "source": "added",
-  "country": "Japan"
- },
- {
-  "id": "nm0003226",
-  "name": "Kenji Mizoguchi",
-  "source": "added",
-  "country": "Japan"
- },
- {
-  "id": "nm0466153",
-  "name": "Hirokazu Koreeda",
-  "source": "added",
-  "country": "Japan"
- },
- {
-  "id": "nm0651915",
-  "name": "Nagisa Ōshima",
-  "source": "added",
-  "country": "Japan"
- },
- {
-  "id": "nm0408076",
-  "name": "Shōhei Imamura",
-  "source": "added",
-  "country": "Japan"
- },
- {
-  "id": "nm0001429",
-  "name": "Takeshi Kitano",
-  "source": "added",
-  "country": "Japan"
- },
- {
-  "id": "nm0464804",
-  "name": "Satoshi Kon",
-  "source": "added",
-  "country": "Japan"
- },
- {
-  "id": "nm3152327",
-  "name": "Ryūsuke Hamaguchi",
-  "source": "added",
-  "country": "Japan"
- },
- {
-  "id": "nm0094435",
-  "name": "Bong Joon Ho",
-  "source": "added",
-  "country": "Korea"
- },
- {
-  "id": "nm0661791",
-  "name": "Park Chan-wook",
-  "source": "added",
-  "country": "Korea"
- },
- {
-  "id": "nm1104118",
-  "name": "Kim Ki-duk",
-  "source": "added",
-  "country": "Korea"
- },
- {
-  "id": "nm0393254",
-  "name": "Hong Sang-soo",
-  "source": "added",
-  "country": "Korea"
- },
- {
-  "id": "nm0407990",
-  "name": "Im Kwon-taek",
-  "source": "added",
-  "country": "Korea"
- },
- {
-  "id": "nm0453518",
-  "name": "Kim Jee-woon",
-  "source": "added",
-  "country": "Korea"
- },
- {
-  "id": "nm2947553",
-  "name": "Na Hong-jin",
-  "source": "added",
-  "country": "Korea"
- },
- {
-  "id": "nm3613566",
-  "name": "Yeon Sang-ho",
-  "source": "added",
-  "country": "Korea"
- },
- {
-  "id": "nm0753423",
-  "name": "Ryoo Seung-wan",
-  "source": "added",
-  "country": "Korea"
- },
- {
-  "id": "nm0000487",
-  "name": "Ang Lee",
-  "source": "added",
-  "country": "China"
- },
- {
-  "id": "nm0002254",
-  "name": "King Hu",
-  "source": "added",
-  "country": "China"
- },
- {
-  "id": "nm0000247",
-  "name": "John Woo",
-  "source": "added",
-  "country": "China"
- },
- {
-  "id": "nm0401176",
-  "name": "Ann Hui",
-  "source": "added",
-  "country": "China"
- },
- {
-  "id": "nm0000774",
-  "name": "Michelangelo Antonioni",
-  "source": "added",
-  "country": "Italy"
- },
- {
-  "id": "nm0001120",
-  "name": "Vittorio De Sica",
-  "source": "added",
-  "country": "Italy"
- },
- {
-  "id": "nm0744023",
-  "name": "Roberto Rossellini",
-  "source": "added",
-  "country": "Italy"
- },
- {
-  "id": "nm0001596",
-  "name": "Pier Paolo Pasolini",
-  "source": "added",
-  "country": "Italy"
- },
- {
-  "id": "nm0778633",
-  "name": "Ettore Scola",
-  "source": "added",
-  "country": "Italy"
- },
- {
-  "id": "nm0000934",
-  "name": "Bernardo Bertolucci",
-  "source": "added",
-  "country": "Italy"
- },
- {
-  "id": "nm0815204",
-  "name": "Paolo Sorrentino",
-  "source": "added",
-  "country": "Italy"
- },
- {
-  "id": "nm0396284",
-  "name": "Hsiao-Hsien Hou",
-  "source": "added",
-  "country": "China"
- },
- {
-  "id": "nm0955443",
-  "name": "Yimou Zhang",
-  "source": "added",
-  "country": "China"
- },
- {
-  "id": "nm0155280",
-  "name": "Kaige Chen",
-  "source": "added",
-  "country": "China"
- },
- {
-  "id": "nm0422605",
-  "name": "Zhangke Jia",
-  "source": "added",
-  "country": "China"
- },
- {
-  "id": "nm0719756",
-  "name": "Jean Renoir",
-  "source": "added",
-  "country": "France"
- },
- {
-  "id": "nm0897118",
-  "name": "Jean Vigo",
-  "source": "added",
-  "country": "France"
- },
- {
-  "id": "nm0138893",
-  "name": "Marcel Carné",
-  "source": "added",
-  "country": "France"
- },
- {
-  "id": "nm0168413",
-  "name": "Jean Cocteau",
-  "source": "added",
-  "country": "France"
- },
- {
-  "id": "nm0002191",
-  "name": "Jacques Audiard",
-  "source": "added",
-  "country": "France"
- },
- {
-  "id": "nm0219136",
-  "name": "Claire Denis",
-  "source": "added",
-  "country": "France"
- },
- {
-  "id": "nm0136021",
-  "name": "Leos Carax",
-  "source": "added",
-  "country": "France"
- },
- {
-  "id": "nm0000801",
-  "name": "Olivier Assayas",
-  "source": "added",
-  "country": "France"
- },
- {
-  "id": "nm0654830",
-  "name": "François Ozon",
-  "source": "added",
-  "country": "France"
- },
- {
-  "id": "nm0167241",
-  "name": "Henri-Georges Clouzot",
-  "source": "added",
-  "country": "France"
- },
- {
-  "id": "nm0617588",
-  "name": "Georges Méliès",
-  "source": "added",
-  "country": "France"
- },
- {
-  "id": "nm0681207",
-  "name": "Maurice Pialat",
-  "source": "added",
-  "country": "France"
- },
- {
-  "id": "nm0000108",
-  "name": "Luc Besson",
-  "source": "added",
-  "country": "France"
- },
- {
-  "id": "nm0000466",
-  "name": "Jean-Pierre Jeunet",
-  "source": "added",
-  "country": "France"
- },
- {
-  "id": "nm1780037",
-  "name": "Céline Sciamma",
-  "source": "added",
-  "country": "France"
- },
- {
-  "id": "nm4469445",
-  "name": "Julia Ducournau",
-  "source": "added",
-  "country": "France"
- },
- {
-  "id": "nm0440913",
-  "name": "Mathieu Kassovitz",
-  "source": "added",
-  "country": "France"
- }
+  {
+    "id": "nm0634240",
+    "name": "Christopher Nolan",
+    "source": "imdb-top50",
+    "rank": 1
+  },
+  {
+    "id": "nm0001104",
+    "name": "Frank Darabont",
+    "source": "imdb-top50",
+    "rank": 3
+  },
+  {
+    "id": "nm0006249",
+    "name": "Satyajit Ray",
+    "source": "imdb-top50",
+    "rank": 4
+  },
+  {
+    "id": "nm0001789",
+    "name": "Andrei Tarkovsky",
+    "source": "imdb-top50",
+    "rank": 5
+  },
+  {
+    "id": "nm0000233",
+    "name": "Quentin Tarantino",
+    "source": "imdb-top50",
+    "rank": 6
+  },
+  {
+    "id": "nm0000040",
+    "name": "Stanley Kubrick",
+    "source": "imdb-top50",
+    "rank": 7
+  },
+  {
+    "id": "nm0000399",
+    "name": "David Fincher",
+    "source": "imdb-top50",
+    "rank": 9
+  },
+  {
+    "id": "nm0006498",
+    "name": "Majid Majidi",
+    "source": "imdb-top50",
+    "rank": 10
+  },
+  {
+    "id": "nm0945981",
+    "name": "Edward Yang",
+    "source": "imdb-top50",
+    "rank": 11
+  },
+  {
+    "id": "nm0001425",
+    "name": "Krzysztof Kieślowski",
+    "source": "imdb-top50",
+    "rank": 12
+  },
+  {
+    "id": "nm0001392",
+    "name": "Peter Jackson",
+    "source": "imdb-top50",
+    "rank": 13
+  },
+  {
+    "id": "nm0005222",
+    "name": "Sam Mendes",
+    "source": "imdb-top50",
+    "rank": 14
+  },
+  {
+    "id": "nm0000122",
+    "name": "Charles Chaplin",
+    "source": "imdb-top50",
+    "rank": 16
+  },
+  {
+    "id": "nm0612816",
+    "name": "Cristian Mungiu",
+    "source": "imdb-top50",
+    "rank": 17
+  },
+  {
+    "id": "nm0899581",
+    "name": "Luchino Visconti",
+    "source": "imdb-top50",
+    "rank": 18
+  },
+  {
+    "id": "nm1410815",
+    "name": "Asghar Farhadi",
+    "source": "imdb-top50",
+    "rank": 19
+  },
+  {
+    "id": "nm0000041",
+    "name": "Akira Kurosawa",
+    "source": "imdb-top50",
+    "rank": 20
+  },
+  {
+    "id": "nm0496969",
+    "name": "Lee Chang-dong",
+    "source": "imdb-top50",
+    "rank": 21
+  },
+  {
+    "id": "nm0898288",
+    "name": "Denis Villeneuve",
+    "source": "imdb-top50",
+    "rank": 22
+  },
+  {
+    "id": "nm0149196",
+    "name": "Nuri Bilge Ceylan",
+    "source": "imdb-top50",
+    "rank": 23
+  },
+  {
+    "id": "nm0000180",
+    "name": "David Lean",
+    "source": "imdb-top50",
+    "rank": 24
+  },
+  {
+    "id": "nm0027572",
+    "name": "Wes Anderson",
+    "source": "imdb-top50",
+    "rank": 25
+  },
+  {
+    "id": "nm0190859",
+    "name": "Alfonso Cuarón",
+    "source": "imdb-top50",
+    "rank": 26
+  },
+  {
+    "id": "nm0000766",
+    "name": "Theodoros Angelopoulos",
+    "source": "imdb-top50",
+    "rank": 27
+  },
+  {
+    "id": "nm0000116",
+    "name": "James Cameron",
+    "source": "imdb-top50",
+    "rank": 28
+  },
+  {
+    "id": "nm0000975",
+    "name": "Robert Bresson",
+    "source": "imdb-top50",
+    "rank": 30
+  },
+  {
+    "id": "nm0001437",
+    "name": "Emir Kusturica",
+    "source": "imdb-top50",
+    "rank": 31
+  },
+  {
+    "id": "nm0000217",
+    "name": "Martin Scorsese",
+    "source": "imdb-top50",
+    "rank": 32
+  },
+  {
+    "id": "nm0000186",
+    "name": "David Lynch",
+    "source": "imdb-top50",
+    "rank": 33
+  },
+  {
+    "id": "nm0001232",
+    "name": "Miloš Forman",
+    "source": "imdb-top50",
+    "rank": 34
+  },
+  {
+    "id": "nm0000759",
+    "name": "Paul Thomas Anderson",
+    "source": "imdb-top50",
+    "rank": 35
+  },
+  {
+    "id": "nm0004244",
+    "name": "Jacques Tati",
+    "source": "imdb-top50",
+    "rank": 36
+  },
+  {
+    "id": "nm0000697",
+    "name": "Billy Wilder",
+    "source": "imdb-top50",
+    "rank": 37
+  },
+  {
+    "id": "nm0327944",
+    "name": "Alejandro G. Iñárritu",
+    "source": "imdb-top50",
+    "rank": 38
+  },
+  {
+    "id": "nm0000019",
+    "name": "Federico Fellini",
+    "source": "imdb-top50",
+    "rank": 40
+  },
+  {
+    "id": "nm0452102",
+    "name": "Abbas Kiarostami",
+    "source": "imdb-top50",
+    "rank": 41
+  },
+  {
+    "id": "nm0169806",
+    "name": "Taika Waititi",
+    "source": "imdb-top50",
+    "rank": 42
+  },
+  {
+    "id": "nm0462030",
+    "name": "Masaki Kobayashi",
+    "source": "imdb-top50",
+    "rank": 43
+  },
+  {
+    "id": "nm0578483",
+    "name": "Jean-Pierre Melville",
+    "source": "imdb-top50",
+    "rank": 44
+  },
+  {
+    "id": "nm0001466",
+    "name": "Sergio Leone",
+    "source": "imdb-top50",
+    "rank": 45
+  },
+  {
+    "id": "nm0004716",
+    "name": "Darren Aronofsky",
+    "source": "imdb-top50",
+    "rank": 46
+  },
+  {
+    "id": "nm0690597",
+    "name": "Gillo Pontecorvo",
+    "source": "imdb-top50",
+    "rank": 47
+  },
+  {
+    "id": "nm0868153",
+    "name": "Giuseppe Tornatore",
+    "source": "imdb-top50",
+    "rank": 48
+  },
+  {
+    "id": "nm0939182",
+    "name": "Wong Kar-Wai",
+    "source": "imdb-top50",
+    "rank": 49
+  },
+  {
+    "id": "nm0000229",
+    "name": "Steven Spielberg",
+    "source": "imdb-top50",
+    "rank": 50
+  },
+  {
+    "id": "nm0796117",
+    "name": "M. Night Shyamalan",
+    "source": "added"
+  },
+  {
+    "id": "nm0000033",
+    "name": "Alfred Hitchcock",
+    "source": "added"
+  },
+  {
+    "id": "nm0001486",
+    "name": "Sidney Lumet",
+    "source": "added"
+  },
+  {
+    "id": "nm0000005",
+    "name": "Ingmar Bergman",
+    "source": "added"
+  },
+  {
+    "id": "nm0000080",
+    "name": "Orson Welles",
+    "source": "added"
+  },
+  {
+    "id": "nm0000361",
+    "name": "Brian De Palma",
+    "source": "added"
+  },
+  {
+    "id": "nm0000142",
+    "name": "Clint Eastwood",
+    "source": "added"
+  },
+  {
+    "id": "nm1950086",
+    "name": "Greta Gerwig",
+    "source": "added"
+  },
+  {
+    "id": "nm0594503",
+    "name": "Hayao Miyazaki",
+    "source": "added"
+  },
+  {
+    "id": "nm0000095",
+    "name": "Woody Allen",
+    "source": "added"
+  },
+  {
+    "id": "nm0000517",
+    "name": "Terrence Malick",
+    "source": "added"
+  },
+  {
+    "id": "nm0001885",
+    "name": "Lars von Trier",
+    "source": "added"
+  },
+  {
+    "id": "nm1312575",
+    "name": "Olivia Wilde",
+    "source": "added"
+  },
+  {
+    "id": "nm0230859",
+    "name": "Xavier Dolan",
+    "source": "added"
+  },
+  {
+    "id": "nm2630323",
+    "name": "Justine Triet",
+    "source": "added"
+  },
+  {
+    "id": "nm0000694",
+    "name": "Wim Wenders",
+    "source": "added"
+  },
+  {
+    "id": "nm0865918",
+    "name": "Éric Toledano",
+    "source": "added"
+  },
+  {
+    "id": "nm0619923",
+    "name": "Olivier Nakache",
+    "source": "added"
+  },
+  {
+    "id": "nm0654868",
+    "name": "Yasujirō Ozu",
+    "source": "added",
+    "country": "Japan"
+  },
+  {
+    "id": "nm0003226",
+    "name": "Kenji Mizoguchi",
+    "source": "added",
+    "country": "Japan"
+  },
+  {
+    "id": "nm0466153",
+    "name": "Hirokazu Koreeda",
+    "source": "added",
+    "country": "Japan"
+  },
+  {
+    "id": "nm0651915",
+    "name": "Nagisa Ōshima",
+    "source": "added",
+    "country": "Japan"
+  },
+  {
+    "id": "nm0408076",
+    "name": "Shōhei Imamura",
+    "source": "added",
+    "country": "Japan"
+  },
+  {
+    "id": "nm0001429",
+    "name": "Takeshi Kitano",
+    "source": "added",
+    "country": "Japan"
+  },
+  {
+    "id": "nm0464804",
+    "name": "Satoshi Kon",
+    "source": "added",
+    "country": "Japan"
+  },
+  {
+    "id": "nm3152327",
+    "name": "Ryūsuke Hamaguchi",
+    "source": "added",
+    "country": "Japan"
+  },
+  {
+    "id": "nm0094435",
+    "name": "Bong Joon Ho",
+    "source": "added",
+    "country": "Korea"
+  },
+  {
+    "id": "nm0661791",
+    "name": "Park Chan-wook",
+    "source": "added",
+    "country": "Korea"
+  },
+  {
+    "id": "nm1104118",
+    "name": "Kim Ki-duk",
+    "source": "added",
+    "country": "Korea"
+  },
+  {
+    "id": "nm0393254",
+    "name": "Hong Sang-soo",
+    "source": "added",
+    "country": "Korea"
+  },
+  {
+    "id": "nm0407990",
+    "name": "Im Kwon-taek",
+    "source": "added",
+    "country": "Korea"
+  },
+  {
+    "id": "nm0453518",
+    "name": "Kim Jee-woon",
+    "source": "added",
+    "country": "Korea"
+  },
+  {
+    "id": "nm2947553",
+    "name": "Na Hong-jin",
+    "source": "added",
+    "country": "Korea"
+  },
+  {
+    "id": "nm3613566",
+    "name": "Yeon Sang-ho",
+    "source": "added",
+    "country": "Korea"
+  },
+  {
+    "id": "nm0753423",
+    "name": "Ryoo Seung-wan",
+    "source": "added",
+    "country": "Korea"
+  },
+  {
+    "id": "nm0000487",
+    "name": "Ang Lee",
+    "source": "added",
+    "country": "China"
+  },
+  {
+    "id": "nm0002254",
+    "name": "King Hu",
+    "source": "added",
+    "country": "China"
+  },
+  {
+    "id": "nm0000247",
+    "name": "John Woo",
+    "source": "added",
+    "country": "China"
+  },
+  {
+    "id": "nm0401176",
+    "name": "Ann Hui",
+    "source": "added",
+    "country": "China"
+  },
+  {
+    "id": "nm0000774",
+    "name": "Michelangelo Antonioni",
+    "source": "added",
+    "country": "Italy"
+  },
+  {
+    "id": "nm0001120",
+    "name": "Vittorio De Sica",
+    "source": "added",
+    "country": "Italy"
+  },
+  {
+    "id": "nm0744023",
+    "name": "Roberto Rossellini",
+    "source": "added",
+    "country": "Italy"
+  },
+  {
+    "id": "nm0001596",
+    "name": "Pier Paolo Pasolini",
+    "source": "added",
+    "country": "Italy"
+  },
+  {
+    "id": "nm0778633",
+    "name": "Ettore Scola",
+    "source": "added",
+    "country": "Italy"
+  },
+  {
+    "id": "nm0000934",
+    "name": "Bernardo Bertolucci",
+    "source": "added",
+    "country": "Italy"
+  },
+  {
+    "id": "nm0815204",
+    "name": "Paolo Sorrentino",
+    "source": "added",
+    "country": "Italy"
+  },
+  {
+    "id": "nm0396284",
+    "name": "Hsiao-Hsien Hou",
+    "source": "added",
+    "country": "China"
+  },
+  {
+    "id": "nm0955443",
+    "name": "Yimou Zhang",
+    "source": "added",
+    "country": "China"
+  },
+  {
+    "id": "nm0155280",
+    "name": "Kaige Chen",
+    "source": "added",
+    "country": "China"
+  },
+  {
+    "id": "nm0422605",
+    "name": "Zhangke Jia",
+    "source": "added",
+    "country": "China"
+  },
+  {
+    "id": "nm0719756",
+    "name": "Jean Renoir",
+    "source": "added",
+    "country": "France"
+  },
+  {
+    "id": "nm0897118",
+    "name": "Jean Vigo",
+    "source": "added",
+    "country": "France"
+  },
+  {
+    "id": "nm0138893",
+    "name": "Marcel Carné",
+    "source": "added",
+    "country": "France"
+  },
+  {
+    "id": "nm0168413",
+    "name": "Jean Cocteau",
+    "source": "added",
+    "country": "France"
+  },
+  {
+    "id": "nm0002191",
+    "name": "Jacques Audiard",
+    "source": "added",
+    "country": "France"
+  },
+  {
+    "id": "nm0219136",
+    "name": "Claire Denis",
+    "source": "added",
+    "country": "France"
+  },
+  {
+    "id": "nm0136021",
+    "name": "Leos Carax",
+    "source": "added",
+    "country": "France"
+  },
+  {
+    "id": "nm0000801",
+    "name": "Olivier Assayas",
+    "source": "added",
+    "country": "France"
+  },
+  {
+    "id": "nm0654830",
+    "name": "François Ozon",
+    "source": "added",
+    "country": "France"
+  },
+  {
+    "id": "nm0167241",
+    "name": "Henri-Georges Clouzot",
+    "source": "added",
+    "country": "France"
+  },
+  {
+    "id": "nm0617588",
+    "name": "Georges Méliès",
+    "source": "added",
+    "country": "France"
+  },
+  {
+    "id": "nm0681207",
+    "name": "Maurice Pialat",
+    "source": "added",
+    "country": "France"
+  },
+  {
+    "id": "nm0000108",
+    "name": "Luc Besson",
+    "source": "added",
+    "country": "France"
+  },
+  {
+    "id": "nm0000466",
+    "name": "Jean-Pierre Jeunet",
+    "source": "added",
+    "country": "France"
+  },
+  {
+    "id": "nm1780037",
+    "name": "Céline Sciamma",
+    "source": "added",
+    "country": "France"
+  },
+  {
+    "id": "nm4469445",
+    "name": "Julia Ducournau",
+    "source": "added",
+    "country": "France"
+  },
+  {
+    "id": "nm0440913",
+    "name": "Mathieu Kassovitz",
+    "source": "added",
+    "country": "France"
+  },
+  {
+    "id": "nm0000320",
+    "name": "Luis Buñuel",
+    "source": "added"
+  },
+  {
+    "id": "nm0637615",
+    "name": "Gaspar Noé",
+    "source": "added"
+  },
+  {
+    "id": "nm0000118",
+    "name": "John Carpenter",
+    "source": "added"
+  },
+  {
+    "id": "nm4170048",
+    "name": "Ari Aster",
+    "source": "added"
+  },
+  {
+    "id": "nm0001023",
+    "name": "John Cassavetes",
+    "source": "added"
+  },
+  {
+    "id": "nm0000500",
+    "name": "Richard Linklater",
+    "source": "added"
+  },
+  {
+    "id": "nm0000490",
+    "name": "Spike Lee",
+    "source": "added"
+  },
+  {
+    "id": "nm0001814",
+    "name": "Gus Van Sant",
+    "source": "added"
+  },
+  {
+    "id": "nm0070159",
+    "name": "Jafar Panahi",
+    "source": "added"
+  }
 ]

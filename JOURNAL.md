@@ -43,10 +43,65 @@ Decisions that would be expensive or dangerous to get wrong on a rebuild.
 | 16 | Never source images by web-image search | Returns whatever ranks rather than the verified film, so errors are undetectable at scale | 2026-08-19 #6 |
 | 17 | A popover must be re-tested at phone width; resetting its *container* to `position: static` does not un-float the panel | The absolutely-positioned element is the one that overlays content — the genre panel sat on top of the film grid on mobile while looking correct on desktop | 2026-09-01 #16 |
 | 18 | A shared component class must declare `flex-direction` explicitly when it can render inside `.filters` | `.filters label` sets `column` and outranks a bare `.chip`, so every filter-bar chip silently stacked its checkbox, name and count for weeks | 2026-09-01 #16 |
+| 19 | A "do we already have this director?" check must match on the IMDb id or the full folded name — never the surname | A surname fallback reported Spike Lee as present because Ang Lee was configured | 2026-09-02 #17 |
+| 20 | Never filter candidate people on `name.basics.primaryProfession` | It is IMDb's top-3 billing, not a credit list: John Carpenter is `music_department,writer,composer` with no `director`. Confirm identity from `knownForTitles`, assign films from `title.crew` | 2026-09-02 #17 |
 
 ---
 
 ## Entries
+
+### 2026-09-02 #17 — Twenty directors requested; eleven were already complete, nine were not
+
+**Branch:** `main` · **Status:** shipped
+
+**Checked first, added second.** Of the 20 names asked for, 11 were already
+configured *and* verified complete — every released film already in the library:
+
+Giuseppe Tornatore (16), Ingmar Bergman (42), Wim Wenders (43), Woody Allen (51),
+Charles Chaplin (17), Miloš Forman (16), Terrence Malick (10), Sidney Lumet (44),
+Orson Welles (28), Paul Thomas Anderson (11), Alejandro G. Iñárritu (10).
+
+Nine were missing **146 films** between them, now added:
+
+| Director | IMDb id | Films | Were in db |
+|---|---|---|---|
+| Luis Buñuel | nm0000320 | 32 | 2 |
+| Spike Lee | nm0000490 | 36 | 8 |
+| Richard Linklater | nm0000500 | 25 | 7 |
+| Gus Van Sant | nm0001814 | 22 | 4 |
+| John Carpenter | nm0000118 | 18 | 2 |
+| Jafar Panahi | nm0070159 | 15 | 2 |
+| Gaspar Noé | nm0637615 | 12 | 2 |
+| John Cassavetes | nm0001023 | 12 | 0 |
+| Ari Aster | nm4170048 | 4 | 3 |
+
+Library **3,263 → 3,409**, matching the predicted +146 exactly.
+
+**Two traps hit while resolving the ids**
+
+- **Last-name matching said we already had Spike Lee. We had Ang Lee.** A
+  presence check that falls back to surnames will report a director as covered
+  when a different person shares the surname. Any "do we have X" check must be
+  confirmed on the id or the full folded name, never the surname alone.
+- **`name.basics.primaryProfession` does not list John Carpenter as a director.**
+  It reads `music_department,writer,composer` — it is IMDb's top-3 billing, not a
+  credit list. Filtering candidate names on `/director/` silently returned zero
+  for him. Identity was confirmed instead from `knownForTitles` (Halloween, The
+  Fog, Dark Star, They Live), and film assignment comes from `title.crew` as
+  always, which is authoritative.
+
+**Verified**
+
+- 20/20 directors complete against their full IMDb filmography — 464 films, zero missing
+- Of the 146 new: 146 have a runtime and a director, 145 an IMDb score, poster and
+  synopsis, 121 an RT score, **0 with a missing or `undefined` director**
+- Spot-checked against real values: Halloween (1978, 91m, RT 97), A Woman Under the
+  Influence (1974, 155m, RT 88), The Discreet Charm of the Bourgeoisie (1972, RT 98)
+- Provider buckets reconcile to 3,409 in both US and FR
+- All nine appear in the director dropdown, now 136 names
+- Buñuel's *Los Olvidados* is present under IMDb's primary title, *The Young and the Damned*
+
+Same run also picked up 3 newly watched films from Letterboxd (seen: 185).
 
 ### 2026-09-01 #16 — Multi-select genre filter, and the mobile panel that overlaid the grid
 

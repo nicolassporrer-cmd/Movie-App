@@ -50,6 +50,28 @@ Decisions that would be expensive or dangerous to get wrong on a rebuild.
 
 ## Entries
 
+### 2026-09-16 #18 — Danny Boyle
+
+**Branch:** `main` · **Status:** shipped
+
+Not configured before; 3 of his films were in via the top-1000 (Trainspotting,
+28 Days Later, Slumdog Millionaire). Added `nm0000965` — the only one of four
+people named Danny Boyle with director credits, confirmed by knownFor (127 Hours,
+28 Days Later, Shallow Grave, Slumdog).
+
+**+12 films, library 3,411 → 3,423.** All 15 released films now present, each
+with runtime, IMDb score, poster and synopsis; 14 with an RT score (the filmed
+stage production *National Theatre Live: Frankenstein* has none — IMDb types it
+`movie`, so it is kept, consistent with the rule that `titleType` decides).
+Correctly excluded: three undated projects (Methuselah, Miss Saigon, Smash and
+Grab) and *Ink* (2026, unrated).
+
+I first expected +13 and investigated the "missing" film before shipping. There
+was none — the expectation miscounted his released films as 16. Worth recording
+only because the check was the right move: a before/after diff by id, listing
+every film as added / already had / not in db, plus films lost (0) and unrelated
+films gained (0), settles it in one pass instead of trusting either number.
+
 ### 2026-09-02 #17 — Twenty directors requested; eleven were already complete, nine were not
 
 **Branch:** `main` · **Status:** shipped

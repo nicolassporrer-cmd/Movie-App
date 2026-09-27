@@ -702,5 +702,445 @@
     "id": "nm0000965",
     "name": "Danny Boyle",
     "source": "added"
+  },
+  {
+    "id": "nm0001752",
+    "name": "Steven Soderbergh",
+    "source": "watched"
+  },
+  {
+    "id": "nm0001129",
+    "name": "Jonathan Demme",
+    "source": "watched"
+  },
+  {
+    "id": "nm0000631",
+    "name": "Ridley Scott",
+    "source": "watched"
+  },
+  {
+    "id": "nm0000338",
+    "name": "Francis Ford Coppola",
+    "source": "watched"
+  },
+  {
+    "id": "nm0000591",
+    "name": "Roman Polanski",
+    "source": "watched"
+  },
+  {
+    "id": "nm0000814",
+    "name": "John G. Avildsen",
+    "source": "watched"
+  },
+  {
+    "id": "nm0000709",
+    "name": "Robert Zemeckis",
+    "source": "watched"
+  },
+  {
+    "id": "nm0001661",
+    "name": "Rob Reiner",
+    "source": "watched"
+  },
+  {
+    "id": "nm0088397",
+    "name": "Bertrand Blier",
+    "source": "watched"
+  },
+  {
+    "id": "nm0001837",
+    "name": "Peter Weir",
+    "source": "watched"
+  },
+  {
+    "id": "nm0000600",
+    "name": "Sam Raimi",
+    "source": "watched"
+  },
+  {
+    "id": "nm0345174",
+    "name": "Luca Guadagnino",
+    "source": "watched"
+  },
+  {
+    "id": "nm0081540",
+    "name": "Susanne Bier",
+    "source": "watched"
+  },
+  {
+    "id": "nm0268380",
+    "name": "Peter Farrelly",
+    "source": "watched"
+  },
+  {
+    "id": "nm1189197",
+    "name": "Quentin Dupieux",
+    "source": "watched"
+  },
+  {
+    "id": "nm0459170",
+    "name": "Randal Kleiser",
+    "source": "watched"
+  },
+  {
+    "id": "nm0680846",
+    "name": "Todd Phillips",
+    "source": "watched"
+  },
+  {
+    "id": "nm0000416",
+    "name": "Terry Gilliam",
+    "source": "watched"
+  },
+  {
+    "id": "nm0003506",
+    "name": "James Mangold",
+    "source": "watched"
+  },
+  {
+    "id": "nm0811583",
+    "name": "Zack Snyder",
+    "source": "watched"
+  },
+  {
+    "id": "nm0899121",
+    "name": "Thomas Vinterberg",
+    "source": "watched"
+  },
+  {
+    "id": "nm1490123",
+    "name": "James Wan",
+    "source": "watched"
+  },
+  {
+    "id": "nm0057842",
+    "name": "Olivier Baroux",
+    "source": "watched"
+  },
+  {
+    "id": "nm0001878",
+    "name": "David Zucker",
+    "source": "watched"
+  },
+  {
+    "id": "nm0001741",
+    "name": "Bryan Singer",
+    "source": "watched"
+  },
+  {
+    "id": "nm0893659",
+    "name": "Gore Verbinski",
+    "source": "watched"
+  },
+  {
+    "id": "nm0942367",
+    "name": "Edgar Wright",
+    "source": "watched"
+  },
+  {
+    "id": "nm0074163",
+    "name": "Edward Berger",
+    "source": "watched"
+  },
+  {
+    "id": "nm0001024",
+    "name": "Nick Cassavetes",
+    "source": "watched"
+  },
+  {
+    "id": "nm0487166",
+    "name": "Yorgos Lanthimos",
+    "source": "watched"
+  },
+  {
+    "id": "nm0269463",
+    "name": "Jon Favreau",
+    "source": "watched"
+  },
+  {
+    "id": "nm0885249",
+    "name": "Jean-Marc Vallée",
+    "source": "watched"
+  },
+  {
+    "id": "nm3133017",
+    "name": "Mehmet Ada Öztekin",
+    "source": "watched"
+  },
+  {
+    "id": "nm0570912",
+    "name": "Adam McKay",
+    "source": "watched"
+  },
+  {
+    "id": "nm0001402",
+    "name": "Terry Jones",
+    "source": "watched"
+  },
+  {
+    "id": "nm0000576",
+    "name": "Sean Penn",
+    "source": "watched"
+  },
+  {
+    "id": "nm0891216",
+    "name": "Matthew Vaughn",
+    "source": "watched"
+  },
+  {
+    "id": "nm0348181",
+    "name": "James Gunn",
+    "source": "watched"
+  },
+  {
+    "id": "nm0048918",
+    "name": "Sean Baker",
+    "source": "watched"
+  },
+  {
+    "id": "nm1343394",
+    "name": "Josh Safdie",
+    "source": "watched"
+  },
+  {
+    "id": "nm0291205",
+    "name": "David Frankel",
+    "source": "watched"
+  },
+  {
+    "id": "nm0443411",
+    "name": "Tony Kaye",
+    "source": "watched"
+  },
+  {
+    "id": "nm0366004",
+    "name": "Mary Harron",
+    "source": "watched"
+  },
+  {
+    "id": "nm0426059",
+    "name": "Rian Johnson",
+    "source": "watched"
+  },
+  {
+    "id": "nm0525303",
+    "name": "Baz Luhrmann",
+    "source": "watched"
+  },
+  {
+    "id": "nm1571412",
+    "name": "Yann Gozlan",
+    "source": "watched"
+  },
+  {
+    "id": "nm1396121",
+    "name": "Makoto Shinkai",
+    "source": "watched"
+  },
+  {
+    "id": "nm1128037",
+    "name": "Ruben Östlund",
+    "source": "watched"
+  },
+  {
+    "id": "nm0083348",
+    "name": "Brad Bird",
+    "source": "watched"
+  },
+  {
+    "id": "nm0500610",
+    "name": "David Leitch",
+    "source": "watched"
+  },
+  {
+    "id": "nm2676052",
+    "name": "Joseph Kosinski",
+    "source": "watched"
+  },
+  {
+    "id": "nm0878763",
+    "name": "Morten Tyldum",
+    "source": "watched"
+  },
+  {
+    "id": "nm2308774",
+    "name": "Destin Daniel Cretton",
+    "source": "watched"
+  },
+  {
+    "id": "nm0322242",
+    "name": "Jonathan Glazer",
+    "source": "watched"
+  },
+  {
+    "id": "nm1630273",
+    "name": "Phyllida Lloyd",
+    "source": "watched"
+  },
+  {
+    "id": "nm3227090",
+    "name": "Damien Chazelle",
+    "source": "watched"
+  },
+  {
+    "id": "nm0002657",
+    "name": "Gary Ross",
+    "source": "watched"
+  },
+  {
+    "id": "nm0002077",
+    "name": "Dexter Fletcher",
+    "source": "watched"
+  },
+  {
+    "id": "nm0881279",
+    "name": "Lee Unkrich",
+    "source": "watched"
+  },
+  {
+    "id": "nm0230032",
+    "name": "Pete Docter",
+    "source": "watched"
+  },
+  {
+    "id": "nm3363032",
+    "name": "Ryan Coogler",
+    "source": "watched"
+  },
+  {
+    "id": "nm1732981",
+    "name": "Martin McDonagh",
+    "source": "watched"
+  },
+  {
+    "id": "nm0520488",
+    "name": "Phil Lord",
+    "source": "watched"
+  },
+  {
+    "id": "nm0588087",
+    "name": "Christopher Miller",
+    "source": "watched"
+  },
+  {
+    "id": "nm3890574",
+    "name": "Oliver Laxe",
+    "source": "watched"
+  },
+  {
+    "id": "nm0049633",
+    "name": "Kyle Balda",
+    "source": "watched"
+  },
+  {
+    "id": "nm4389150",
+    "name": "Ali Abbasi",
+    "source": "watched"
+  },
+  {
+    "id": "nm1227232",
+    "name": "Brady Corbet",
+    "source": "watched"
+  },
+  {
+    "id": "nm0617042",
+    "name": "Mark Mylod",
+    "source": "watched"
+  },
+  {
+    "id": "nm0206760",
+    "name": "Jonathan Dayton",
+    "source": "watched"
+  },
+  {
+    "id": "nm0267512",
+    "name": "Valerie Faris",
+    "source": "watched"
+  },
+  {
+    "id": "nm1443502",
+    "name": "Jordan Peele",
+    "source": "watched"
+  },
+  {
+    "id": "nm0276062",
+    "name": "Todd Field",
+    "source": "watched"
+  },
+  {
+    "id": "nm1699934",
+    "name": "Sean Durkin",
+    "source": "watched"
+  },
+  {
+    "id": "nm0380831",
+    "name": "Jeanne Herry",
+    "source": "watched"
+  },
+  {
+    "id": "nm1379002",
+    "name": "David Robert Mitchell",
+    "source": "watched"
+  },
+  {
+    "id": "nm2937122",
+    "name": "Adrian Molina",
+    "source": "watched"
+  },
+  {
+    "id": "nm5358492",
+    "name": "Kemp Powers",
+    "source": "watched"
+  },
+  {
+    "id": "nm10533874",
+    "name": "Curry Barker",
+    "source": "watched"
+  },
+  {
+    "id": "nm0709056",
+    "name": "Peter Ramsey",
+    "source": "watched"
+  },
+  {
+    "id": "nm6478535",
+    "name": "Gints Zilbalodis",
+    "source": "watched"
+  },
+  {
+    "id": "nm0684342",
+    "name": "Jan Pinkava",
+    "source": "watched"
+  },
+  {
+    "id": "nm6113836",
+    "name": "Artus",
+    "source": "watched"
+  },
+  {
+    "id": "nm7146773",
+    "name": "Sébastien Vanicek",
+    "source": "watched"
+  },
+  {
+    "id": "nm2130108",
+    "name": "Bob Persichetti",
+    "source": "watched"
+  },
+  {
+    "id": "nm0745247",
+    "name": "Rodney Rothman",
+    "source": "watched"
+  },
+  {
+    "id": "nm1690966",
+    "name": "Joaquim Dos Santos",
+    "source": "watched"
+  },
+  {
+    "id": "nm1042511",
+    "name": "Justin K. Thompson",
+    "source": "watched"
   }
 ]

@@ -45,10 +45,76 @@ Decisions that would be expensive or dangerous to get wrong on a rebuild.
 | 18 | A shared component class must declare `flex-direction` explicitly when it can render inside `.filters` | `.filters label` sets `column` and outranks a bare `.chip`, so every filter-bar chip silently stacked its checkbox, name and count for weeks | 2026-09-01 #16 |
 | 19 | A "do we already have this director?" check must match on the IMDb id or the full folded name — never the surname | A surname fallback reported Spike Lee as present because Ang Lee was configured | 2026-09-02 #17 |
 | 20 | Never filter candidate people on `name.basics.primaryProfession` | It is IMDb's top-3 billing, not a credit list: John Carpenter is `music_department,writer,composer` with no `director`. Confirm identity from `knownForTitles`, assign films from `title.crew` | 2026-09-02 #17 |
+| 21 | Never let a TMDB filmography stand in for an IMDb one | TMDB returns 25 Boyle directing credits against IMDb's 15, and OMDb reports `Type=movie` for 10 of the 11 extras. Only `title.basics.titleType` separates films from shorts and TV films | 2026-09-27 #19 |
+| 22 | A Letterboxd title is not an IMDb title — match watched films through `data/letterboxd-ids.json`, not the title alone | "Dune" is "Dune: Part One". Title-only matching created a stub holding `seen` beside a real record reading unwatched, so a watched film sat in "to watch" | 2026-09-27 #19 |
+| 23 | A scripted multi-part edit must assert each part, not just that the file changed | A three-replacement edit reported success having applied two; the missing one silently dropped the code that saved the merge | 2026-09-27 #19 |
 
 ---
 
 ## Entries
+
+### 2026-09-27 #19 — Watching a film now follows its director, automatically
+
+**Branch:** `main` · **Status:** shipped
+
+The standing rule was manual: ask for a film, get the director's filmography.
+Now it also fires on its own whenever the Letterboxd diary brings in a film by a
+director we do not follow.
+
+**Backfill first.** 88 directors of already-watched films were unfollowed, so
+their other work was invisible. Adding them brought **627 films: 3,425 → 4,052**.
+Chosen deliberately over the narrower options — 68 of those directors have only
+one watched film, which is where most of the volume came from.
+
+**Why the automation stops at the director**
+
+`build-data.cjs` decides what counts as a film using IMDb's `titleType === 'movie'`,
+which lives in ~600 MB of datasets CI does not have. Resolving filmographies from
+TMDB instead was built, tested, and rejected on the measurement: for Danny Boyle,
+TMDB returns **25** directing credits where IMDb returns **15** — the extra 11
+being shorts, TV films and the 2012 Olympic opening ceremony. OMDb cannot separate
+them either; asked by id it answers `Type=movie` for 10 of the 11. Films added
+that way would appear for one night and be deleted by the next authoritative
+build. So `expand-directors.cjs` writes only the director, and the films come
+from the one source that knows the difference.
+
+Verified end-to-end by forgetting Danny Boyle, marking Trainspotting watched, and
+rebuilding: 3 TMDB calls found `nm0000965`, and the build restored exactly 15
+films with no shorts and *Millions* back to its IMDb year of 2004.
+
+**The duplicate this uncovered**
+
+Letterboxd's titles are not IMDb's. Matching on title alone had produced a second,
+empty record holding "seen" while the real film still read unwatched:
+
+| Letterboxd | IMDb |
+|---|---|
+| Dune (2021) | Dune: Part One |
+| Star Wars: The Force Awakens | Star Wars: Episode VII - The Force Awakens |
+| The Accountant² | The Accountant 2 |
+
+So the app believed he had *not* seen Dune and was offering it in "to watch".
+Fixed with `data/letterboxd-ids.json`, a title|year → IMDb id map that
+`expand-directors.cjs` fills from TMDB and that all three consumers now read —
+sync, build and the expander itself. The three stubs were folded into the real
+records, ratings intact, and the mapping survives a full rebuild.
+
+**Two bugs of my own, both silent successes**
+
+- The merge printed "merged into tt1160419" and wrote nothing: an early
+  `return` for "no new directors" sat before the save. Merging a duplicate and
+  finding a new director are independent outcomes; the save now precedes the exit.
+- A three-part scripted edit reported `ok` having applied two parts. The guard
+  only tested "did the file change at all", which cannot see a missed hunk. Edits
+  that must all land are now made individually, or asserted individually.
+
+**Cost of the automation:** zero on a settled library. The pre-filter skips any
+film whose director is already followed, so last night's run would have made **0**
+API calls.
+
+**Left alone on purpose:** *The Queen's Gambit* is a TV series, so no confident
+film match exists. It stays a title-only record rather than being resolved to
+something that merely scores well.
 
 ### 2026-09-16 #18 — Danny Boyle
 

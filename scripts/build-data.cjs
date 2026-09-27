@@ -125,10 +125,19 @@ function rss(u) {
     ensure(id);
   });
 
-  let unresolved = 0;
+  let unresolved = 0, viaAlias = 0;
+  /* Letterboxd's title is not always IMDb's — "Dune" against "Dune: Part One",
+     "The Accountant²" against "The Accountant 2". Matching on the title alone
+     builds an empty `lb:` record that holds "seen" while the real film still
+     reads unwatched, so a film he has watched keeps appearing in "to watch".
+     expand-directors.cjs resolves those through TMDB and records the pairing in
+     this map; consult it before giving up on the title. */
+  const ALIAS = APP + 'data/letterboxd-ids.json';
+  const alias = fs.existsSync(ALIAS) ? JSON.parse(fs.readFileSync(ALIAS, 'utf8')) : {};
   const attach = (rows, field) => rows.forEach(row => {
     const key = norm(row.Name) + '|' + row.Year;
-    const id = byTitle.get(key);
+    let id = byTitle.get(key);
+    if (!id && alias[key]) { id = alias[key]; viaAlias++; }
     let rec;
     if (id) rec = ensure(id);
     else {
@@ -213,6 +222,7 @@ function rss(u) {
   fs.mkdirSync(APP + 'public/data', { recursive: true });
   fs.writeFileSync(APP + 'public/data/films.json', JSON.stringify(payload));
   const kb = Math.round(fs.statSync(APP + 'public/data/films.json').size / 1024);
+  if (viaAlias) console.log('matched through the Letterboxd alias map:', viaAlias);
   console.log('films:', all.length, '| dropped (excluded directors):', dropped, '| skipped (unreleased/announced):', skippedUnreleased, '| unresolved:', unresolved);
   console.log('with RT:', rtN, '| with poster:', posterN);
   console.log('genres:', genres.length, '| directors:', directors.length);

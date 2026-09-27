@@ -1,40 +1,41 @@
-/* When a newly-watched film has a director we do not yet follow, add that
-   director's whole filmography — the standing rule, applied automatically.
+/* Standing rule: watching a film by a director we do not yet follow should pull
+   in that director's whole filmography. This script is the half that can run
+   anywhere — it works out WHO to follow and writes them to data/directors.json.
+   build-data.cjs then adds the actual films on the next full `npm run data`.
 
-   Why this cannot simply call build-data.cjs: that script derives filmographies
-   from the IMDb datasets, ~600 MB of local-only files that CI does not have.
-   So this resolves the same facts from TMDB, which CI can reach.
+   Why it does not add the films itself
+   -----------------------------------
+   The catalogue's rule for "is this a film" is IMDb's titleType === 'movie'.
+   That lives in the IMDb datasets: ~600 MB of local-only files CI does not have.
+   Resolving a filmography from TMDB instead was tried and rejected — measured on
+   Danny Boyle, TMDB returns 25 directing credits where IMDb returns 15, the
+   extra 11 being shorts, TV films and the 2012 Olympic opening ceremony. OMDb
+   cannot separate them either: asked by id, it answers Type=movie for 10 of
+   those 11. Films added that way would appear for a night and then be deleted by
+   the next authoritative build — the silent-data-loss failure again, so the
+   script stops at the director and leaves the films to the one source that
+   knows the difference.
 
-   Two things happen for each new director, and BOTH matter:
-
-     1. the director is appended to data/directors.json — permanent, so the next
-        full `npm run data` re-derives their films from IMDb and keeps them;
-     2. their missing films are added immediately, so they appear the same night.
-
-   Without (1) the next local build would quietly DELETE every film this script
-   added, because build-data.cjs rebuilds the catalogue from the configured
-   directors and would no longer see a reason to keep them.
-
-   Fields set here come from TMDB only: title, year, runtime, genres, director.
-   The IMDb score is deliberately left null — TMDB's vote_average is a different
-   number from a different population, and showing it as an IMDb rating would be
-   a fabricated value. apply-omdb.cjs fills the real one from OMDb afterwards.
+   Resolution path, all of it TMDB, none of it guessed from names:
+     film's IMDb id -> /find -> /movie/{id}/credits -> Director
+                             -> /person/{id}/external_ids -> the nm id
 
    Usage:
-     node scripts/expand-directors.cjs                  apply
-     node scripts/expand-directors.cjs --dry-run        report only
-     node scripts/expand-directors.cjs --max-directors 3  cap one run
+     node scripts/expand-directors.cjs              apply
+     node scripts/expand-directors.cjs --dry-run    report only, write nothing
+     node scripts/expand-directors.cjs --limit 40   cap the lookups in one run
 */
 const fs = require('fs'), path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 const FILMS = path.join(ROOT, 'public', 'data', 'films.json');
 const DIRS = path.join(ROOT, 'data', 'directors.json');
 const EXCL = path.join(ROOT, 'data', 'excluded-directors.json');
+/* Letterboxd title|year -> IMDb id, for titles the two sites spell differently. */
+const ALIAS = path.join(ROOT, 'data', 'letterboxd-ids.json');
 
 const DRY = process.argv.includes('--dry-run');
 const argOf = n => { const i = process.argv.indexOf(n); return i > -1 ? process.argv[i + 1] : null; };
-const MAX_DIRECTORS = +(argOf('--max-directors') || 6);
-const THIS_YEAR = new Date().getFullYear();
+const LIMIT = +(argOf('--limit') || 60);
 
 function key() {
   if (process.env.TMDB_API_KEY) return process.env.TMDB_API_KEY.trim();
@@ -53,7 +54,7 @@ async function tmdb(p, params) {
   for (const [k, v] of Object.entries(params || {})) u.searchParams.set(k, v);
   for (let attempt = 0; attempt < 3; attempt++) {
     const r = await fetch(u);
-    if (r.status === 429) { await sleep(1500); continue; }   // rate limited, not an error
+    if (r.status === 429) { await sleep(1500); continue; }   // rate limited, not a failure
     if (r.status === 404) return null;
     if (!r.ok) throw new Error('TMDB HTTP ' + r.status + ' for ' + p);
     return r.json();
@@ -67,80 +68,116 @@ async function tmdb(p, params) {
   const exclRaw = JSON.parse(fs.readFileSync(EXCL, 'utf8'));
   const exclIds = new Set((Array.isArray(exclRaw) ? exclRaw : exclRaw.directors || []).map(d => d.id || d));
   const cfgIds = new Set(cfg.map(d => d.id));
-  const have = new Map(payload.films.map(f => [f.k, f]));
 
-  /* Only films watched AND carrying an IMDb id can be resolved. A `lb:` film has
-     no id to look up; it gets one at the next full build and is picked up then. */
-  const candidates = payload.films.filter(f => f.s && /^tt/.test(f.k));
-  console.log('seen films with an IMDb id: ' + candidates.length);
+  /* Two kinds of watched film. One carries an IMDb id and is looked up directly.
+     The other was added by the diary sync from a title and a year alone — a `lb:`
+     key, no id, no director — because it was never in the catalogue. Those are
+     searched by title and year instead; following their director is what finally
+     pulls the film itself in, properly, at the next build. */
+  const seen = payload.films.filter(f => f.s && /^tt/.test(f.k));
+  const byTitle = payload.films.filter(f => f.s && !/^tt/.test(f.k) && f.t && f.y);
 
-  const newDirectors = new Map();   // nm id -> { name, tmdbId, via }
-  let looked = 0;
+  /* Cheap pre-filter: a film whose displayed director is already followed needs
+     no API call at all. On a settled library this skips essentially everything,
+     which is what keeps a nightly run free. */
+  const todo = seen.filter(f => !(f.d && cfg.some(d => f.d.includes(d.name))));
+  console.log('seen films: ' + payload.films.filter(f => f.s).length +
+              ' | with an IMDb id needing a lookup: ' + todo.length +
+              ' | to match by title: ' + byTitle.length);
 
-  for (const f of candidates) {
-    if (newDirectors.size >= MAX_DIRECTORS) break;
-    /* Cheap pre-filter: if the displayed director is already a configured name we
-       skip the lookup entirely. Costs nothing and avoids most API calls. */
-    if (f.d && cfg.some(d => f.d.includes(d.name))) continue;
+  const found = new Map();   // nm id -> { name, via }
+  let calls = 0, mergedAny = false;
 
-    const found = await tmdb('/find/' + f.k, { external_source: 'imdb_id' });
-    looked++;
-    const movie = found && found.movie_results && found.movie_results[0];
-    if (!movie) continue;
-    const credits = await tmdb('/movie/' + movie.id + '/credits');
-    const dirs = (credits && credits.crew || []).filter(c => c.job === 'Director');
-    for (const d of dirs) {
-      const ext = await tmdb('/person/' + d.id + '/external_ids');
-      const nm = ext && ext.imdb_id;
-      if (!nm || cfgIds.has(nm) || exclIds.has(nm) || newDirectors.has(nm)) continue;
-      newDirectors.set(nm, { name: d.name, tmdbId: d.id, via: f.t + ' (' + f.y + ')' });
-      if (newDirectors.size >= MAX_DIRECTORS) break;
+  /* A title search can return the wrong film, and a wrong film means following a
+     director he has never watched. Accept a hit only when the year matches and
+     the title matches once punctuation and case are stripped. */
+  const fold = s => String(s).toLowerCase().replace(/[^a-z0-9]/g, '');
+  async function resolveMovie(f) {
+    if (/^tt/.test(f.k)) {
+      const hit = await tmdb('/find/' + f.k, { external_source: 'imdb_id' });
+      calls++;
+      return (hit && hit.movie_results && hit.movie_results[0]) || null;
     }
-  }
-
-  console.log('lookups made: ' + looked + ' | directors not yet followed: ' + newDirectors.size);
-  if (!newDirectors.size) { console.log('Nothing to expand.'); return; }
-
-  const addedFilms = [];
-  for (const [nm, info] of newDirectors) {
-    const credits = await tmdb('/person/' + info.tmdbId + '/movie_credits');
-    const directed = (credits && credits.crew || []).filter(c => c.job === 'Director');
-    const seenIds = new Set();
-    let added = 0, skipped = 0;
-    for (const c of directed) {
-      if (seenIds.has(c.id)) continue;            // TMDB lists some films twice
-      seenIds.add(c.id);
+    const r = await tmdb('/search/movie', { query: f.t, primary_release_year: f.y });
+    calls++;
+    const cands = (r && r.results) || [];
+    const exact = cands.find(c => {
       const y = c.release_date ? +c.release_date.slice(0, 4) : 0;
-      if (!y || y >= THIS_YEAR) { skipped++; continue; }   // unreleased, same rule as build-data
-      const m = await tmdb('/movie/' + c.id);
-      if (!m || !m.imdb_id || !/^tt/.test(m.imdb_id)) { skipped++; continue; }
-      if (have.has(m.imdb_id)) continue;
-      const film = {
-        k: m.imdb_id, t: m.title, y, r: m.runtime || null,
-        g: (m.genres || []).map(g => g.name),
-        i: null, v: 0, d: info.name, s: 0, w: 0, m: null,
-        top: 0, dir: 1, bong: 0, nv: 0, nvc: 0
-      };
-      payload.films.push(film);
-      have.set(film.k, film);
-      addedFilms.push(film);
-      added++;
-    }
-    console.log('  ' + info.name + ' (' + nm + ') — watched ' + info.via + ' — added ' + added + ' films, skipped ' + skipped);
-    cfg.push({ id: nm, name: info.name, source: 'watched-auto' });
+      return y === f.y && (fold(c.title) === fold(f.t) || fold(c.original_title) === fold(f.t));
+    });
+    if (!exact) console.log('  no confident match for ' + f.t + ' (' + f.y + ') — left alone rather than guessed');
+    return exact || null;
   }
 
-  console.log('\nnew directors: ' + newDirectors.size + ' | new films: ' + addedFilms.length);
-  console.log('films added without a runtime: ' + addedFilms.filter(f => !f.r).length +
-              ' | without genres: ' + addedFilms.filter(f => !f.g.length).length);
+  /* Letterboxd's title is not IMDb's. "Dune" is "Dune: Part One", "The
+     Accountant²" is "The Accountant 2", "Star Wars: The Force Awakens" is
+     "Star Wars: Episode VII - The Force Awakens". Matching on the title alone
+     therefore leaves the diary's stub sitting beside the real record — and the
+     stub is the one holding "seen", so the app offers a film he has watched and
+     hides that he watched it. Once TMDB gives the real IMDb id, record the alias
+     so the diary sync lands on the right record from now on, and fold any stub
+     that already exists into it. */
+  const aliases = fs.existsSync(ALIAS) ? JSON.parse(fs.readFileSync(ALIAS, 'utf8')) : {};
+  const byKey = new Map(payload.films.map(f => [f.k, f]));
+  const dropped = new Set();
+  function mergeStub(stub, tconst) {
+    aliases[stub.k.replace(/^lb:/, '')] = tconst;
+    mergedAny = true;
+    const real = byKey.get(tconst);
+    if (!real) return 'alias recorded, film not in the catalogue yet';
+    if (stub.s) real.s = 1;
+    if (stub.m != null && real.m == null) real.m = stub.m;
+    if (stub.w) real.w = 1;
+    dropped.add(stub.k);
+    return 'merged into ' + tconst + ' — ' + real.t;
+  }
+
+  for (const f of [...todo, ...byTitle].slice(0, LIMIT)) {
+    const movie = await resolveMovie(f);
+    if (!movie) continue;
+    if (!/^tt/.test(f.k)) {
+      const ext = await tmdb('/movie/' + movie.id + '/external_ids');
+      calls++;
+      if (ext && /^tt/.test(ext.imdb_id || '')) {
+        console.log('  ' + f.t + ' (' + f.y + '): ' + mergeStub(f, ext.imdb_id));
+      }
+    }
+    const credits = await tmdb('/movie/' + movie.id + '/credits');
+    calls++;
+    for (const d of (credits && credits.crew || []).filter(c => c.job === 'Director')) {
+      const ext = await tmdb('/person/' + d.id + '/external_ids');
+      calls++;
+      const nm = ext && ext.imdb_id;
+      if (!nm) { console.log('  no IMDb id for ' + d.name + ' — skipped rather than guessed'); continue; }
+      if (cfgIds.has(nm) || exclIds.has(nm) || found.has(nm)) continue;
+      found.set(nm, { name: d.name, via: f.t + ' (' + f.y + ')' });
+    }
+  }
+
+  console.log('TMDB calls: ' + calls + ' | directors to start following: ' + found.size);
+  for (const [nm, info] of found) console.log('  + ' + info.name + '  ' + nm + '  (from ' + info.via + ')');
   if (DRY) { console.log('\nDRY RUN — nothing written.'); return; }
 
+  /* Merges are saved before the "no new directors" exit, not after it. They are
+     independent outcomes: a run can merge a duplicate and find nobody new, and an
+     early return here would print "merged" while writing nothing. */
+  if (mergedAny) {
+    fs.writeFileSync(ALIAS, JSON.stringify(aliases, null, 2) + '\n');
+    console.log('alias map written: ' + Object.keys(aliases).length + ' entries');
+    if (dropped.size) {
+      payload.films = payload.films.filter(f => !dropped.has(f.k));
+      payload.counts.all = payload.films.length;
+      payload.counts.seen = payload.films.filter(f => f.s).length;
+      payload.counts.watchlist = payload.films.filter(f => f.w && !f.s).length;
+      fs.writeFileSync(FILMS, JSON.stringify(payload));
+      console.log('duplicate stubs folded into the real record: ' + dropped.size +
+                  ' | library: ' + payload.counts.all + ' | seen: ' + payload.counts.seen);
+    }
+  }
+
+  if (!found.size) { console.log('No new directors to follow.'); return; }
+  for (const [nm, info] of found) cfg.push({ id: nm, name: info.name, source: 'watched-auto' });
   fs.writeFileSync(DIRS, JSON.stringify(cfg, null, 2) + '\n');
-  payload.counts.all = payload.films.length;
-  payload.counts.seen = payload.films.filter(f => f.s).length;
-  payload.counts.watchlist = payload.films.filter(f => f.w && !f.s).length;
-  payload.counts.withRt = payload.films.filter(f => f.rt != null).length;
-  payload.counts.withPoster = payload.films.filter(f => f.p).length;
-  fs.writeFileSync(FILMS, JSON.stringify(payload));
-  console.log('written. library: ' + payload.counts.all + ' | directors followed: ' + cfg.length);
+  console.log('written. directors followed: ' + cfg.length);
+  console.log('Their films arrive with the next full `npm run data`.');
 })();

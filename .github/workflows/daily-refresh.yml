@@ -69,6 +69,18 @@ jobs:
             echo "present=true" >> "$GITHUB_OUTPUT"
           fi
 
+      # Standing rule: watching a film by a director we do not follow should pull in
+      # that director's whole filmography. This step decides only WHO to follow and
+      # appends them to data/directors.json. It deliberately does not add the films:
+      # what counts as a film is IMDb's titleType, which lives in ~600 MB of datasets
+      # CI does not have, and TMDB's answer is wider (25 Boyle credits against IMDb's
+      # 15). The films arrive with the next full "npm run data".
+      - name: Follow the director of anything newly watched
+        if: steps.tmdb.outputs.present == 'true'
+        env:
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+        run: node scripts/expand-directors.cjs
+
       # Streaming rights rotate, so provider data expires after 7 days. Running daily
       # against that window refreshes roughly a seventh of the library each night
       # instead of all 2,200 at once.

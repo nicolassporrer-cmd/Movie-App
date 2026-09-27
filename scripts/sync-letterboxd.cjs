@@ -66,11 +66,24 @@ function parseFeed(xml) {
   const index = new Map();
   payload.films.forEach(f => index.set(norm(f.t) + '|' + f.y, f));
 
+  /* Letterboxd and IMDb do not always spell a title the same way: "Dune" against
+     "Dune: Part One", "The Accountant²" against "The Accountant 2", "Star Wars:
+     The Force Awakens" against "Star Wars: Episode VII - The Force Awakens".
+     Matching on the title alone builds a second, empty record that holds "seen"
+     while the real record still reads unwatched — so a film he has watched keeps
+     appearing in "to watch". expand-directors.cjs resolves those through TMDB and
+     records the pairing here, so the diary lands on the real record instead. */
+  const ALIAS = path.join(ROOT, 'data', 'letterboxd-ids.json');
+  const aliases = fs.existsSync(ALIAS) ? JSON.parse(fs.readFileSync(ALIAS, 'utf8')) : {};
+  const byId = new Map(payload.films.map(f => [f.k, f]));
+  let aliasHits = 0;
+
   const newlySeen = [], ratingChanged = [], added = [], unchanged = [];
   entries.forEach(e => {
     const key = norm(e.title) + '|' + e.year;
     const rating = e.rating != null ? parseFloat(e.rating) : null;
     let film = index.get(key);
+    if (!film && aliases[key] && byId.has(aliases[key])) { film = byId.get(aliases[key]); aliasHits++; }
 
     if (!film) {
       // Watched something outside the catalogue. Add it with what the feed gives;
@@ -101,6 +114,7 @@ function parseFeed(xml) {
   console.log('added to the library:', added.length);
   added.forEach(t => console.log('  * ' + t + '  (metadata fills in on the next full data build)'));
   console.log('already up to date:', unchanged.length);
+  if (aliasHits) console.log('matched through the alias map:', aliasHits);
 
   if (DRY) { console.log('\nDRY RUN — nothing written.'); return; }
   if (!newlySeen.length && !ratingChanged.length && !added.length) {

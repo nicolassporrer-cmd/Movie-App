@@ -48,10 +48,67 @@ Decisions that would be expensive or dangerous to get wrong on a rebuild.
 | 21 | Never let a TMDB filmography stand in for an IMDb one | TMDB returns 25 Boyle directing credits against IMDb's 15, and OMDb reports `Type=movie` for 10 of the 11 extras. Only `title.basics.titleType` separates films from shorts and TV films | 2026-09-27 #19 |
 | 22 | A Letterboxd title is not an IMDb title — match watched films through `data/letterboxd-ids.json`, not the title alone | "Dune" is "Dune: Part One". Title-only matching created a stub holding `seen` beside a real record reading unwatched, so a watched film sat in "to watch" | 2026-09-27 #19 |
 | 23 | A scripted multi-part edit must assert each part, not just that the file changed | A three-replacement edit reported success having applied two; the missing one silently dropped the code that saved the merge | 2026-09-27 #19 |
+| 24 | Store `ot` (originalTitle) and search it — 42% of the catalogue is filed under a different English title | "Notre salut" is indexed as "A Man of His Time"; searching the name the film is known by returned nothing | 2026-10-05 #20 |
+| 25 | After an interrupted `npm run data`, verify seen / watchlist / availability counts before trusting films.json | A background run that completed only `build-data` left a valid-looking dataset with 23 fewer seen films and zero streaming data | 2026-10-05 #20 |
 
 ---
 
 ## Entries
+
+### 2026-10-05 #20 — Eight films requested; six directors added, and titles became searchable
+
+**Branch:** `main` · **Status:** shipped
+
+Eight films asked for by name. Two directors were already followed (Na Hong-jin,
+Akira Kurosawa) and three of the films were already in the library (The Wailing,
+Ran, Pride & Prejudice). Six directors were added, **+50 films, 4,087 → 4,137**:
+
+| Director | IMDb id | Films | Requested film |
+|---|---|---|---|
+| David Cronenberg | nm0000343 | 25 | Dead Ringers (1988) |
+| Joe Wright | nm0942504 | 9 | Pride & Prejudice (2005) |
+| Marcell Jankovics | nm0417757 | 5 | Fehérlófia / Son of the White Mare (1981) |
+| Ciro Guerra | nm1458734 | 5 | El abrazo de la serpiente (2015) |
+| Emmanuel Marre | nm4345767 | 4 | Notre salut (2026) |
+| László Nemes | nm1841577 | 4 | Saul fia / Son of Saul (2015) |
+
+Every one of the eight attributions was confirmed against `title.crew` before
+anything was written — not inferred from the name. Joe Wright needed it: **47
+people share that name**, and only `nm0942504` (born 1972) directs Pride &
+Prejudice, Atonement and Darkest Hour.
+
+**The searchability problem this exposed**
+
+*Notre Salut* is filed by IMDb as *A Man of His Time*. Having added it, searching
+the name it was asked for would have found nothing — and that is not a one-off:
+**1,729 of 4,137 films, 42% of the catalogue, carry a different original title.**
+Battleship Potemkin for Bronenosets Potyomkin, The Passion of Joan of Arc for La
+passion de Jeanne d'Arc.
+
+Fixed by storing `ot` (originalTitle, only when it differs from primaryTitle) and
+matching it in the search alongside the title and the credits. The detail panel
+shows it under the English title in quiet italics — same film, not a second fact.
+
+Asserted on the shipped dataset with the app's own predicate: "notre salut",
+"fehérlófia", "saul fia", "abrazo de la serpiente", "gokseong" each return
+exactly their film.
+
+**Known gap:** a French *distribution* title still will not match — "le fils de
+Saul" returns nothing, because IMDb's two title fields hold the English and the
+Hungarian, not the French release name. Those live in `title.akas`, a dataset not
+downloaded here. Worth adding if searching in French becomes a habit.
+
+**A background run that stopped mid-pipeline**
+
+`npm run data` was moved to the background on timeout and completed only
+`build-data`. The result looked finished — a valid dataset, 4,136 films, a fresh
+`builtAt` — while **seen had dropped 193 → 170** and **every film had lost its
+streaming availability**, because `sync-letterboxd` and `apply-providers` never
+ran. Caught by checking the counts rather than the exit status; the grep wrapping
+the command had also exited 1 with no output, which reads like a failure and was
+not one. Running the remaining steps restored both. The pipeline is sequential and
+partially-applied is a real state: after any interrupted run, check seen, watchlist
+and availability counts before trusting the file.
 
 ### 2026-09-27 #19 — Watching a film now follows its director, automatically
 

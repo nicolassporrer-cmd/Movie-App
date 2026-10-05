@@ -146,7 +146,13 @@ export default function App() {
         // With no subscriptions declared, "streaming" means any service rather than none
         if (mine.size && !here.some(i => mine.has(data.providers[i]))) return false;
       }
-      if (q && !(f.t.toLowerCase().includes(q) || (f.da || f.d || '').toLowerCase().includes(q))) return false;
+      /* Match the original title too. IMDb files "Notre salut" under "A Man of His
+         Time" and "Fehérlófia" under "Son of the White Mare"; 1,729 of these films
+         carry a different original title, so searching the name you actually know
+         would otherwise come back empty. */
+      if (q && !(f.t.toLowerCase().includes(q) ||
+                 (f.ot || '').toLowerCase().includes(q) ||
+                 (f.da || f.d || '').toLowerCase().includes(q))) return false;
       return true;
     });
     const by = {

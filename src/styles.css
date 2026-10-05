@@ -305,3 +305,7 @@ input[type="range"] { width: 118px; accent-color: var(--acc); }
     box-shadow: none;
   }
 }
+
+/* The title a film was released under, shown under the English one IMDb files
+   it by. Quiet and italic: it is the same film, not a second fact. */
+.orig-title { margin: -4px 0 6px; font-size: 13.5px; font-style: italic; color: var(--mut); }

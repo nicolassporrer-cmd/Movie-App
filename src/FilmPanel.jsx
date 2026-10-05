@@ -27,6 +27,8 @@ export default function FilmPanel({ film, total, onRoll, onClose, providers = []
         ) : (
           <>
             <h2>{film.t}</h2>
+            {/* The title it was released under, where IMDb files it in English. */}
+            {film.ot ? <p className="orig-title">{film.ot}</p> : null}
             <p className="sub">
               {film.y || '—'} · {film.r ? film.r + ' min' : '—'} · {film.da || film.d || '—'}
             </p>

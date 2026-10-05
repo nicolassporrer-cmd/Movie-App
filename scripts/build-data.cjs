@@ -58,7 +58,10 @@ function rss(u) {
     rl.on('line', l => {
       const p = l.split('\t');
       if (p[1] !== 'movie') return;
-      const rec = { id: p[0], title: p[2], year: +p[5] || null, runtime: +p[7] || null, genres: p[8] === '\\N' ? [] : p[8].split(',') };
+      /* originalTitle is kept only when it differs from primaryTitle. IMDb files
+         "Notre salut" under "A Man of His Time" and "Fehérlófia" under "Son of
+         the White Mare" — 42% of this catalogue — so the search needs both. */
+      const rec = { id: p[0], title: p[2], orig: p[3] !== p[2] ? p[3] : null, year: +p[5] || null, runtime: +p[7] || null, genres: p[8] === '\\N' ? [] : p[8].split(',') };
       byId.set(p[0], rec);
       // title+year is not unique — resolve collisions toward the most-voted film
       const v = (rat.get(p[0]) || { v: 0 }).v;
@@ -105,7 +108,7 @@ function rss(u) {
     if (films.has(id)) return films.get(id);
     const m = byId.get(id), r = rat.get(id), ds = crew.get(id) || [];
     const rec = {
-      k: id, t: m.title, y: m.year, r: m.runtime, g: m.genres,
+      k: id, t: m.title, ot: m.orig || undefined, y: m.year, r: m.runtime, g: m.genres,
       i: r ? r.r : null, v: r ? r.v : 0, dIds: ds,
       s: 0, w: 0, m: null, top: topIds.has(id) ? 1 : 0,
       dir: ds.some(d => dirIds.has(d)) ? 1 : 0,
